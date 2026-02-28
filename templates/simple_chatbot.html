@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #2C3E50 0%, #34495E 100%);
+            min-height: 100vh;
+            color: #ECF0F1;
+        }
+        
+        .chat-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #34495E;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .chat-messages {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        
+        .message {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        .user-message {
+            background: #e3f2fd;
+            text-align: right;
+        }
+        
+        .bot-message {
+            background: #FFFFFF;
+            text-align: left;
+            color: #2C3E50;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.6;
+        }
+        
+        .bot-message strong {
+            font-weight: bold;
+            color: #1a1a1a;
+        }
+        
+        .bot-message em {
+            font-style: italic;
+        }
+        
+        .input-container {
+            display: flex;
+            gap: 10px;
+        }
+        
+        #messageInput {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #5D6D7E;
+            border-radius: 5px;
+            font-size: 16px;
+            background: #2C3E50;
+            color: #ECF0F1;
+        }
+        
+        #sendBtn {
+            padding: 10px 20px;
+            background: #3498DB;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        #sendBtn:hover {
+            background: #5a6fd8;
+        }
+        
+        .test-buttons {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .test-btn {
+            margin: 5px;
+            padding: 8px 15px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .navbar {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            padding: 10px 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a href="{{ url_for('userlog_page') }}">Home</a>
+        <a href="{{ url_for('chatbot_page') }}">Chatbot</a>
+        <a href="{{ url_for('logout') }}">Logout</a>
+    </div>
+
+    <div class="chat-container">
+        <h2 style="text-align: center; color: #ECF0F1;">Simple Chatbot</h2>
+        
+        <div class="test-buttons">
+            <button class="test-btn" onclick="testJS()">Test JavaScript</button>
+            <button class="test-btn" onclick="testServer()">Test Server</button>
+            <button class="test-btn" onclick="sendTestMessage()">Send Test Message</button>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot-message">
+                Hello! I'm your medical assistant chatbot. Type a message below and click Send.
+            </div>
+        </div>
+        
+        <div class="input-container">
+            <input type="text" id="messageInput" placeholder="Type your message here..." />
+            <button id="sendBtn" onclick="sendMessage()">Send</button>
+        </div>
+        
+        <div style="margin-top: 10px; text-align: center; color: #666; font-size: 12px;">
+            Status: <span id="status">Ready</span>
+        </div>
+    </div>
+
+    <script>
+        console.log('Simple chatbot script loaded');
+        
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+            console.log('Status:', message);
+        }
+        
+        // Function to format chatbot responses (preserve newlines and basic markdown)
+        function formatMessage(text) {
+            if (!text) return '';
+            
+            // Escape HTML to prevent XSS, but preserve formatting
+            let formatted = String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            
+            // Convert markdown-style formatting
+            formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            
+            // Convert newlines to <br> tags
+            formatted = formatted.replace(/\n/g, '<br>');
+            
+            // Convert numbered/bullet lists
+            formatted = formatted.replace(/^•\s/gm, '• ');
+            
+            return formatted;
+        }
+        
+        function addMessage(text, isUser) {
+            console.log('Adding message:', text, 'User:', isUser);
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + (isUser ? 'user-message' : 'bot-message');
+            
+            // Use innerHTML for bot messages to preserve formatting, textContent for user messages
+            if (isUser) {
+                messageDiv.textContent = 'You: ' + text;
+            } else {
+                messageDiv.innerHTML = 'Bot: ' + formatMessage(text);
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            updateStatus('Message added');
+        }
+        
+        function testJS() {
+            console.log('Testing JavaScript...');
+            alert('JavaScript is working!');
+            addMessage('JavaScript test successful!', false);
+            updateStatus('JavaScript working');
+        }
+        
+        function testServer() {
+            console.log('Testing server...');
+            updateStatus('Testing server...');
+            
+            fetch('/simple_test')
+                .then(response => response.text())
+                .then(data => {
+                    console.log('Server response:', data);
+                    addMessage('Server test: ' + data, false);
+                    updateStatus('Server working');
+                })
+                .catch(error => {
+                    console.error('Server test error:', error);
+                    addMessage('Server test failed: ' + error.message, false);
+                    updateStatus('Server error');
+                });
+        }
+        
+        function sendTestMessage() {
+            console.log('Sending test message...');
+            document.getElementById('messageInput').value = 'test';
+            sendMessage();
+        }
+        
+        function sendMessage() {
+            console.log('sendMessage function called');
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) {
+                console.log('Empty message');
+                updateStatus('Empty message');
+                return;
+            }
+            
+            console.log('Sending message:', message);
+            updateStatus('Sending message...');
+            
+            // Add user message
+            addMessage(message, true);
+            input.value = '';
+            
+            // Send to server - using /chat endpoint for comprehensive responses
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: message })
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                updateStatus('Got response');
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                if (data.response) {
+                    addMessage(data.response, false);
+                    updateStatus('Response received');
+                } else {
+                    addMessage('No response from server', false);
+                    updateStatus('No response');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                addMessage('Error: ' + error.message, false);
+                updateStatus('Error occurred');
+            });
+        }
+        
+        // Handle Enter key
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                console.log('Enter key pressed');
+                sendMessage();
+            }
+        });
+        
+        console.log('Simple chatbot ready');
+        updateStatus('Ready');
+    </script>
+</body>
+</html>

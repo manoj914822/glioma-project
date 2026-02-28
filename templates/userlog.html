@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BRAIN HEMORRHAGE DETECTION</title>
+    <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <style>
+      /* .row{
+        display: flex;
+        padding-left: 2%;
+        padding-right: 2%;
+      }
+      .column{
+        width: 30%;
+        margin: 1%;
+      } */
+      input[type=submit], input[type=file]{
+        width: 50%;
+        border:1px solid #ffffff;
+        color: white;
+        background-color: transparent;
+        padding:14px 0;
+        margin: 8px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      input[type=submit]{
+        border:1px solid #ffffff;
+      }
+      input[type=submit]:hover{
+        background-color: #ffffff;
+        color: black;
+      }
+      h1{
+        color: white;
+      }
+      .imageCoose{
+        width: 50%;
+        margin: auto;
+        padding: 50px;
+        background-color: rgba(0, 0, 0, 0.50);
+        color: white;
+      }
+      .row{
+        background-color: wheat;
+        font-size: 14px;
+        margin: 150px 50px;
+        padding: 50px;
+      }
+      img{
+       width: 100%;
+       margin-bottom: 30px;     }
+      body{
+        background-image: url('static/demo2.jpg');
+        background-size: 100% 100vh;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+      }
+      h4{
+        text-align: center;
+      }
+    </style>
+</head>
+ <body > 
+  <nav class="navbar navbar-inverse">
+    <div class="container-fluid">
+      <div class="navbar-header">
+     
+  
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>                        
+        </button>
+        <a class="navbar-brand" href="/">GLIOMA DETECTION</a>
+      </div>
+      <div class="collapse navbar-collapse" id="myNavbar">
+        <ul class="nav navbar-nav">
+          <!-- <li ><a data-value="#form1" onclick="toggleform(event)"><span class="glyphicon glyphicon-home"></span>Home</a></li> -->
+          <!-- <li class="dropdown">
+            <a class="dropdown-toggle" data-toggle="dropdown" href="#">Page 1 <span class="caret"></span></a>
+            <ul class="dropdown-menu">
+              <li><a href="#">Page 1-1</a></li>
+              <li><a href="#">Page 1-2</a></li>
+              <li><a href="#">Page 1-3</a></li>
+            </ul>
+          </li>
+          <li><a href="#">Page 2</a></li>
+          <li><a href="#">Page 3</a></li> -->
+        </ul>
+        <ul class="nav navbar-nav navbar-right">
+          <li><a href="{{ url_for('doctor_dashboard') }}">🩺 Doctor Dashboard</a></li>
+          <li><a href="{{ url_for('patient_reports') }}">📋 My Reports</a></li>
+          <li><a href="{{ url_for('chatbot_page') }}">💬 Chatbot</a></li>
+          <li><a href="{{ url_for('logout') }}"><span class="glyphicon glyphicon-log-out"></span> 🚪 Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+    <div class="container">
+      {% if msg %}
+      <div class="alert alert-warning alert-dismissible">
+        <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+        <strong>Warning!</strong> {{msg}}
+      </div>
+      {% endif %}
+  <!-- <center> -->
+  <div style="display:flex; gap:20px; align-items:flex-start;">
+    <div style="flex:1;">
+      <h1 style="padding-top: 50px; text-align: center;">GLIOMA DETECTION USING DEEP LEARNING</h1>
+      <hr>
+      <div class="imageCoose">
+          <h2>Select Brain Scan Image</h2>
+          <hr>
+            <form action="{{url_for('image')}}" method="POST" enctype="multipart/form-data" style="display: flex;">
+              <input type="file" id="file" name="filename" accept="image/*" required>
+              <input type="submit" value="Analyse">
+            </form>
+
+        <!-- Voice Instructions -->
+        <div style="margin-top: 30px; padding: 20px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+          <h3 style="color: white; text-align: center;">🎤 Voice Instructions</h3>
+          <div style="text-align: center; margin: 20px 0;">
+            <button onclick="speakInstructions()" style="background: #2196F3; color: white; border: none; padding: 15px 30px; border-radius: 25px; font-size: 16px; cursor: pointer;">
+              🔊 Hear Instructions
+            </button>
+          </div>
+          <div style="color: white; text-align: center; font-size: 14px;">
+            <p>Click the button above to hear voice instructions for uploading and analyzing brain scan images.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <aside style="width:320px; background: rgba(0,0,0,0.6); color:#fff; padding:16px; border-radius:10px; position:sticky; top:20px;">
+      <h3 style="margin-top:0;">📝 Important Note</h3>
+      <div id="memoContainer">
+        {% if memos and memos|length > 0 %}
+          <h4 id="memoTitle">{{ memos[0].title }}</h4>
+          <ul id="memoLines">
+            {% for line in memos[0].body_lines %}
+              <li>{{ line }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>No notes available.</p>
+        {% endif %}
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button id="prevMemo" class="btn btn-default btn-sm" disabled>Prev</button>
+        <button id="nextMemo" class="btn btn-primary btn-sm">Next</button>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    function speakInstructions() {
+      if ('speechSynthesis' in window) {
+        const instructions = `Welcome to the Glioma Detection System. To analyze a brain scan image, please follow these steps:
+
+        Step 1: Click on the "Choose File" button to select your brain scan image.
+        Step 2: Select an image file in JPG, JPEG, or PNG format.
+        Step 3: Click the "Analyse" button to start the analysis.
+        Step 4: Wait for the system to process your image through 4 stages: original, grayscale, edge detection, threshold detection, and image sharpening.
+        Step 5: View your results showing the diagnosis and accuracy percentage.
+        Step 6: Check the "Graphs" menu to see your accuracy progression over time.
+
+        The system can detect 5 types: Astrocytoma, Ependymoma, Glioblastoma, Oligodendroglioma, and No Tumor.
+
+        For best results, ensure your brain scan image is clear and properly oriented.`;
+
+        const utterance = new SpeechSynthesisUtterance(instructions);
+        utterance.rate = 0.8;
+        utterance.pitch = 1;
+        utterance.volume = 0.9;
+
+        // Try to use a clear voice
+        const voices = speechSynthesis.getVoices();
+        const preferredVoice = voices.find(voice =>
+          voice.name.includes('Google') ||
+          voice.name.includes('Microsoft') ||
+          voice.lang.includes('en-US')
+        );
+
+        if (preferredVoice) {
+          utterance.voice = preferredVoice;
+        }
+
+        speechSynthesis.speak(utterance);
+      } else {
+        alert('Text-to-speech not supported in this browser');
+      }
+    }
+
+    // Auto-speak welcome message when page loads
+    window.addEventListener('load', function() {
+      setTimeout(() => {
+        if ('speechSynthesis' in window) {
+          const welcomeMessage = 'Welcome to the Brain Scan Analysis page. Click the "Hear Instructions" button to learn how to upload and analyze your brain scan images.';
+          const utterance = new SpeechSynthesisUtterance(welcomeMessage);
+          utterance.rate = 0.9;
+          utterance.pitch = 1;
+          utterance.volume = 0.8;
+          speechSynthesis.speak(utterance);
+        }
+      }, 1500);
+    });
+    // Sidebar memos logic
+    (function(){
+      const memos = {{ (memos or []) | tojson }};
+      let idx = 0;
+      const titleEl = document.getElementById('memoTitle');
+      const linesEl = document.getElementById('memoLines');
+      const prevBtn = document.getElementById('prevMemo');
+      const nextBtn = document.getElementById('nextMemo');
+      let autoTimer = null;
+
+      function render() {
+        if (!memos || memos.length === 0) return;
+        const m = memos[idx];
+        titleEl.textContent = m.title || 'Note';
+        linesEl.innerHTML = '';
+        (m.body_lines || []).forEach(t => {
+          const li = document.createElement('li');
+          li.textContent = t;
+          linesEl.appendChild(li);
+        });
+        prevBtn.disabled = idx === 0;
+        nextBtn.disabled = idx >= memos.length - 1;
+      }
+      function startAutoAdvance() {
+        if (autoTimer) clearInterval(autoTimer);
+        autoTimer = setInterval(() => {
+          if (idx < memos.length - 1) {
+            idx++;
+            render();
+          } else {
+            clearInterval(autoTimer);
+          }
+        }, 5000); // advance every 5s
+      }
+
+      if (nextBtn) nextBtn.addEventListener('click', () => { if (idx < memos.length - 1) { idx++; render(); }});
+      if (prevBtn) prevBtn.addEventListener('click', () => { if (idx > 0) { idx--; render(); }});
+      render();
+      startAutoAdvance();
+    })();
+  </script>
+
+</body>
+</html>

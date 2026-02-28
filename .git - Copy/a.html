@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Doctor Dashboard - GLIOMA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f6f8fb; color: #222; }
+    header { background: #2E86AB; color: white; padding: 16px 24px; }
+    .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; padding: 16px; }
+    .card { background: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    h2 { margin-top: 0; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px 10px; border-bottom: 1px solid #eee; font-size: 14px; }
+    th { text-align: left; background: #f2f6fa; }
+    .row { display: flex; gap: 16px; }
+    .col { flex: 1; }
+    .preview { display: flex; gap: 16px; }
+    .preview img { max-width: 48%; border-radius: 6px; border: 1px solid #ddd; }
+    .input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
+    .btn { background: #2E86AB; color: white; border: 0; padding: 10px 14px; border-radius: 6px; cursor: pointer; }
+    .small { font-size: 12px; color: #666; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Doctor Dashboard</h1>
+    <div class="small">Signed in as {{ user_name }}</div>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Dataset & Models Overview</h2>
+      <div class="row">
+        <div class="col">
+          <h3>Training Data</h3>
+          <table>
+            <thead><tr><th>Class</th><th>Images</th></tr></thead>
+            <tbody>
+              {% for cls, cnt in overview.train_classes.items() %}
+              <tr><td>{{ cls }}</td><td>{{ cnt }}</td></tr>
+              {% endfor %}
+              <tr><th>Total</th><th>{{ overview.total_train_images }}</th></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="col">
+          <h3>Models</h3>
+          <table>
+            <thead><tr><th>Name</th><th>Size (MB)</th></tr></thead>
+            <tbody>
+              {% for m in overview.models %}
+              <tr><td>{{ m.name }}</td><td>{{ m.size_mb }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Assistant</h2>
+      <div class="small">Ask about cases, tumor classes, or how to proceed.</div>
+      <div style="margin-top: 10px; display: flex; gap: 8px;">
+        <input id="chat-msg" class="input" placeholder="Type a message..." />
+        <button class="btn" onclick="sendChat()">Send</button>
+      </div>
+      <pre id="chat-log" class="small" style="margin-top: 12px; white-space: pre-wrap;"></pre>
+    </div>
+
+    <div class="card" style="grid-column: 1 / span 2;">
+      <h2>Latest Analyses</h2>
+      <div class="small">Click a filename to generate tumor-only focus.</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Filename</th>
+            <th>Predicted Class</th>
+            <th>Accuracy (%)</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f, pcls, acc, ts in recent %}
+          <tr>
+            <td><a href="#" onclick="focusTumor('{{ f }}'); return false;">{{ f }}</a></td>
+            <td>{{ pcls }}</td>
+            <td>{{ '%.1f' % acc if acc is not none else '' }}</td>
+            <td>{{ ts }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div class="preview" style="margin-top: 14px;">
+        <div style="flex:1;">
+          <div class="small">Tumor-only Focus Overlay</div>
+          <img id="focus-img" src="" alt="Tumor Focus" />
+        </div>
+        <div style="flex:1;">
+          <div class="small">Tumor Region (Cropped)</div>
+          <img id="crop-img" src="" alt="Tumor Crop" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function sendChat() {
+      const msg = document.getElementById('chat-msg').value.trim();
+      if (!msg) return;
+      try {
+        const res = await fetch('/simple_chat', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ message: msg })
+        });
+        const data = await res.json();
+        const log = document.getElementById('chat-log');
+        log.textContent += `You: ${msg}\nAssistant: ${data.response || data.error}\n\n`;
+        document.getElementById('chat-msg').value = '';
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function focusTumor(filename) {
+      try {
+        const res = await fetch(`/tumor_focus/${encodeURIComponent(filename)}`);
+        const data = await res.json();
+        if (data.focus) {
+          document.getElementById('focus-img').src = `/static/${data.focus}`;
+        }
+        if (data.crop) {
+          document.getElementById('crop-img').src = `/static/${data.crop}`;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  </script>
+</body>
+</html>
+
+

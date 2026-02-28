@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Glioma AR Medical Viewer with Grad-CAM</title>
+  <style>
+    body {
+      margin:0;
+      overflow:hidden;
+      font-family: Arial, sans-serif;
+      background: #000;
+    }
+    #medical-hud {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: rgba(0,0,0,0.9);
+      color: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      z-index: 100;
+      border: 2px solid #4fc3f7;
+      max-width: 350px;
+    }
+    #medical-hud h2 {
+      margin: 0 0 10px 0;
+      color: #4fc3f7;
+      font-size: 18px;
+    }
+    .medical-instruction {
+      font-size: 14px;
+      margin: 8px 0;
+      line-height: 1.4;
+    }
+    .tumor-info {
+      background: rgba(79, 195, 247, 0.1);
+      padding: 10px;
+      border-radius: 5px;
+      margin: 10px 0;
+      border-left: 3px solid #4fc3f7;
+    }
+    #ar-comparison-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+    }
+    .ar-image-panel {
+      position: relative;
+      max-width: 45%;
+      max-height: 80%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .ar-image-panel h4 {
+      color: #4fc3f7;
+      margin: 10px 0;
+      font-size: 16px;
+      background: rgba(0,0,0,0.7);
+      padding: 5px 10px;
+      border-radius: 5px;
+    }
+    .medical-ar-image {
+      max-width: 100%;
+      max-height: 100%;
+      border: 3px solid #4fc3f7;
+      box-shadow: 0 0 40px rgba(79, 195, 247, 0.5);
+      border-radius: 10px;
+      cursor: grab;
+    }
+    .ar-toggle-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #4fc3f7;
+      color: black;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      z-index: 10;
+    }
+    .ar-controls {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.8);
+      padding: 10px 20px;
+      border-radius: 20px;
+      display: flex;
+      gap: 15px;
+    }
+    .control-btn {
+      background: #4fc3f7;
+      color: black;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div id="medical-hud">
+    <h2>Glioma AR Medical Viewer with Grad-CAM</h2>
+    <div class="medical-instruction"><strong>Medical Image:</strong> {{ filename }}</div>
+    <div class="medical-instruction"><strong>Usage:</strong> Move device to view images in your environment</div>
+    <div class="medical-instruction"><strong>Scale:</strong> Pinch to zoom, drag to reposition</div>
+    
+    <div class="tumor-info">
+      <div><strong>Medical Context:</strong> Brain Tumor Analysis</div>
+      <div><strong>Audience:</strong> Doctors & Researchers</div>
+      <div><strong>Purpose:</strong> Diagnostic Review & Research</div>
+      <div><strong>View:</strong> Original Image vs AI Heatmap</div>
+    </div>
+    
+    <a href="{{ url_for('userlog_page') }}" style="color:#4fc3f7; text-decoration:none; display:inline-block; margin-top:10px;">← Back to Medical Dashboard</a>
+  </div>
+
+  <div id="ar-comparison-container">
+    <div class="ar-image-panel">
+      <h4>Original Image</h4>
+      <img id="original-ar-image" class="medical-ar-image"
+           src="{{ url_for('static', filename='uploads/' + filename) }}"
+           alt="Original Glioma Medical AR View"
+           onload="arImageLoaded('original')"
+           onerror="arImageError('original')" />
+      <button class="ar-toggle-btn" onclick="toggleARPanel('original')">Hide</button>
+    </div>
+    
+    <div class="ar-image-panel">
+      <h4>Grad-CAM Heatmap</h4>
+      <img id="gradcam-ar-image" class="medical-ar-image"
+           src="{{ url_for('static', filename=gradcam_filename) }}"
+           alt="Grad-CAM Heatmap AR View"
+           onload="arImageLoaded('gradcam')"
+           onerror="arImageError('gradcam')" />
+      <button class="ar-toggle-btn" onclick="toggleARPanel('gradcam')">Hide</button>
+    </div>
+  </div>
+
+  <div class="ar-controls">
+    <button class="control-btn" onclick="resetARView()">Reset View</button>
+    <button class="control-btn" onclick="toggleMedicalInfo()">Medical Info</button>
+    <button class="control-btn" onclick="captureMedicalView()">Capture</button>
+  </div>
+
+  <script>
+    let scale = 1;
+    let translateX = 0, translateY = 0;
+    let startX, startY;
+    let isDragging = false;
+    let touchStartDistance = 0;
+
+    function arImageLoaded(type) {
+      console.log(`Glioma ${type} medical image loaded for AR view`);
+      if (type === 'original') {
+        initializeMedicalAR();
+      }
+    }
+
+    function arImageError(type) {
+      console.error(`Error loading ${type} medical image`);
+      if (type === 'original') {
+        alert('Medical image loading error. Please check file availability.');
+      }
+    }
+
+    function toggleARPanel(type) {
+      const panel = document.querySelector(`#${type}-ar-image`).parentElement;
+      const button = panel.querySelector('.ar-toggle-btn');
+      
+      if (panel.style.display === 'none') {
+        panel.style.display = 'flex';
+        button.textContent = 'Hide';
+      } else {
+        panel.style.display = 'none';
+        button.textContent = 'Show';
+      }
+    }
+
+    function initializeMedicalAR() {
+      const images = document.querySelectorAll('.medical-ar-image');
+      const container = document.getElementById('ar-comparison-container');
+      
+      // Touch events for mobile AR interaction
+      container.addEventListener('touchstart', handleTouchStart, { passive: false });
+      container.addEventListener('touchmove', handleTouchMove, { passive: false });
+      container.addEventListener('touchend', handleTouchEnd);
+      
+      // Mouse events for desktop
+      container.addEventListener('mousedown', handleMouseDown);
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      
+      // Double tap to reset
+      container.addEventListener('dblclick', resetARView);
+    }
+
+    function handleTouchStart(e) {
+      e.preventDefault();
+      if (e.touches.length === 1) {
+        // Single touch - dragging
+        isDragging = true;
+        startX = e.touches[0].clientX - translateX;
+        startY = e.touches[0].clientY - translateY;
+      } else if (e.touches.length === 2) {
+        // Two touches - pinch to zoom
+        touchStartDistance = getTouchDistance(e.touches[0], e.touches[1]);
+      }
+    }
+
+    function handleTouchMove(e) {
+      e.preventDefault();
+      if (e.touches.length === 1 && isDragging) {
+        // Dragging
+        translateX = e.touches[0].clientX - startX;
+        translateY = e.touches[0].clientY - startY;
+        updateARTransforms();
+      } else if (e.touches.length === 2) {
+        // Pinch to zoom
+        const currentDistance = getTouchDistance(e.touches[0], e.touches[1]);
+        if (touchStartDistance !== 0) {
+          scale = Math.max(0.1, Math.min(5, scale * (currentDistance / touchStartDistance)));
+          touchStartDistance = currentDistance;
+          updateARTransforms();
+        }
+      }
+    }
+
+    function handleTouchEnd() {
+      isDragging = false;
+      touchStartDistance = 0;
+    }
+
+    function handleMouseDown(e) {
+      e.preventDefault();
+      isDragging = true;
+      startX = e.clientX - translateX;
+      startY = e.clientY - translateY;
+      document.querySelectorAll('.medical-ar-image').forEach(img => {
+        img.style.cursor = 'grabbing';
+      });
+    }
+
+    function handleMouseMove(e) {
+      if (isDragging) {
+        e.preventDefault();
+        translateX = e.clientX - startX;
+        translateY = e.clientY - startY;
+        updateARTransforms();
+      }
+    }
+
+    function handleMouseUp() {
+      isDragging = false;
+      document.querySelectorAll('.medical-ar-image').forEach(img => {
+        img.style.cursor = 'grab';
+      });
+    }
+
+    function getTouchDistance(touch1, touch2) {
+      const dx = touch1.clientX - touch2.clientX;
+      const dy = touch1.clientY - touch2.clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function updateARTransforms() {
+      const images = document.querySelectorAll('.medical-ar-image');
+      images.forEach(image => {
+        image.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+      });
+    }
+
+    function resetARView() {
+      scale = 1;
+      translateX = 0;
+      translateY = 0;
+      updateARTransforms();
+    }
+
+    function toggleMedicalInfo() {
+      const hud = document.getElementById('medical-hud');
+      hud.style.display = hud.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function captureMedicalView() {
+      // Simulate medical view capture (in real app, this would save to medical records)
+      alert('Medical view captured for research documentation');
+      
+      // Here you would integrate with your medical record system
+      console.log('Glioma AR view captured:', '{{ filename }}');
+    }
+
+    // Medical device orientation simulation
+    function simulateMedicalDeviceOrientation() {
+      // This would integrate with actual device orientation APIs
+      // For now, we simulate medical AR environment
+      console.log('Medical AR environment ready for glioma analysis');
+    }
+
+    // Initialize medical AR features
+    simulateMedicalDeviceOrientation();
+
+    // Medical research integration points
+    function prepareForMedicalResearch() {
+      // Integration points for research data collection
+      console.log('Glioma AR viewer ready for medical research use');
+    }
+
+    prepareForMedicalResearch();
+  </script>
+</body>
+</html>

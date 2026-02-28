@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Doctor Dashboard - GLIOMA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f6f8fb; color: #222; }
+        header { background: #2E86AB; color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
+        .doctor-profile { display: flex; align-items: center; gap: 15px; }
+        .doctor-avatar { width: 50px; height: 50px; border-radius: 50%; border: 3px solid white; }
+        .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; padding: 16px; }
+        .card { background: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        h2 { margin-top: 0; color: #2E86AB; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px 10px; border-bottom: 1px solid #eee; font-size: 14px; }
+        th { text-align: left; background: #f2f6fa; }
+        .btn { background: #2E86AB; color: white; border: 0; padding: 8px 16px; border-radius: 6px; cursor: pointer; text-decoration: none; display: inline-block; }
+        .btn-small { padding: 5px 10px; font-size: 12px; }
+        .btn-success { background: #27ae60; }
+        .btn-warning { background: #f39c12; }
+        .input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; margin: 5px 0; }
+        textarea { min-height: 100px; resize: vertical; }
+        .report-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
+        .modal-content { background: white; margin: 50px auto; padding: 20px; border-radius: 10px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; }
+        .close { float: right; font-size: 24px; cursor: pointer; }
+        .patient-info { background: #e8f4fd; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .status-badge { padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .status-reviewed { background: #d4edda; color: #155724; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-review { color: #27ae60; font-weight: bold; }
+        .doctor-signature { border-top: 1px solid #ccc; padding-top: 10px; margin-top: 20px; font-style: italic; }
+        .image-preview { max-width: 200px; border-radius: 5px; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <header>
+        <div>
+            <h1>Doctor Dashboard</h1>
+            <div style="font-size: 14px;">Signed in as Dr. {{ doctor_name }}</div>
+        </div>
+        <div class="doctor-profile">
+            <img src="{{ url_for('static', filename='images/doctor_avatar.jpg') }}" alt="Doctor Avatar" class="doctor-avatar" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjUiIGN5PSIyNSIgcj0iMjUiIGZpbGw9IiMyRTg2QUIiLz4KPHN2ZyB3aWR0aD0iMzAiIGhlaWdodD0iMzAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4PSIxMCIgeT0iMTAiPgo8cGF0aCBkPSJNMTIgMTJjMi4yMSAwIDQtMS43OSA0LTRzLTEuNzktNC00LTQtNCAxLjc5LTQgNCAxLjc5IDQgNCA0em0wIDJjLTIuNjcgMC04IDEuMzQtOCA0djJoMTZ2LTJjMC0yLjY2LTUuMzMtNC04LTR6IiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4KPC9zdmc+'">
+            <div>
+                <strong>Dr. {{ doctor_name }}</strong><br>
+                <span style="font-size: 12px;">Neurosurgeon</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Bar -->
+    <nav style="background: #1c5a7c; padding: 15px; text-align: center;">
+        <a href="{{ url_for('collaboration_main') }}" class="btn" style="margin: 0 10px; background: #9b59b6;">Collaboration</a>
+        <a href="{{ url_for('patient_reports') }}" class="btn" style="margin: 0 10px;">Patient Reports</a>
+        <a href="{{ url_for('doctor_logout') }}" class="btn" style="margin: 0 10px; background: #e74c3c;">Logout</a>
+    </nav>
+
+    <!-- Report Writing Modal -->
+    <div id="report-modal" class="report-modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeReportModal()">&times;</span>
+            <h2>Write Medical Report</h2>
+
+            <div id="patient-info" class="patient-info">
+                <strong>Patient ID:</strong> <span id="patient-id-display"></span><br>
+                <strong>Image:</strong> <span id="image-filename-display"></span><br>
+                <strong>AI Prediction:</strong> <span id="ai-prediction-display"></span><br>
+                <strong>AI Confidence:</strong> <span id="confidence-display"></span>
+            </div>
+
+            <form id="report-form">
+                <input type="hidden" id="report-user-id" name="user_id">
+                <input type="hidden" id="report-filename" name="filename">
+
+                <label for="corrected-class"><strong>Doctor's Diagnosis:</strong></label>
+                <select id="corrected-class" name="corrected_class" class="input">
+                    <option value="">-- Confirm or Correct AI Diagnosis --</option>
+                    <option value="Astrocytoma">Astrocytoma</option>
+                    <option value="Glioblastoma">Glioblastoma</option>
+                    <option value="Ependymoma">Ependymoma</option>
+                    <option value="Oligodendroglioma">Oligodendroglioma</option>
+                    <option value="notumor">No Tumor</option>
+                </select>
+
+                <label for="clinical-summary"><strong>Clinical Summary:</strong></label>
+                <textarea id="clinical-summary" name="clinical_summary" class="input" placeholder="Describe the patient's clinical presentation, symptoms, and examination findings..."></textarea>
+
+                <label for="treatment-recommendations"><strong>Treatment Recommendations:</strong></label>
+                <textarea id="treatment-recommendations" name="treatment_recommendations" class="input" placeholder="Outline recommended treatment plan, surgical interventions, medications, and follow-up care..."></textarea>
+
+                <label for="notes"><strong>Additional Notes:</strong></label>
+                <textarea id="notes" name="notes" class="input" placeholder="Any additional observations, concerns, or recommendations for the patient..."></textarea>
+
+                <div style="margin-top: 20px; text-align: center;">
+                    <button type="button" class="btn btn-success" onclick="submitReport()">Submit Report</button>
+                    <button type="button" class="btn" onclick="closeReportModal()" style="background: #95a5a6;">Cancel</button>
+                </div>
+            </form>
+
+            <div class="doctor-signature">
+                Report prepared by: Dr. {{ doctor_name }}<br>
+                Date: <span id="current-date"></span><br>
+                <em>The attending physician will prepare a detailed report on the patient's condition.</em>
+            </div>
+        </div>
+    </div>
+
+    <!-- Welcome Message -->
+    <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #2E86AB, #1e293b); color: white; margin-bottom: 20px; border-radius: 10px;">
+        <h2 style="margin-bottom: 10px;">🩺 Tele-Oncology Collaboration Hub</h2>
+        <p style="font-size: 18px; margin-bottom: 15px;">Welcome to the Tele-Oncology Collaboration Hub, Dr. Demo.</p>
+        <p style="font-size: 16px; margin-bottom: 20px;">This platform enables seamless remote consultations through collaborative sessions. To begin, simply click on any patient file listed below. You'll be able to initiate secure video calls, annotate medical images in real time, and engage in multi-doctor case discussions.</p>
+        <p style="font-size: 14px;"><strong>Key features include:</strong></p>
+        <ul style="list-style: none; text-align: center; padding: 0;">
+            <li>• Jitsi Meet video conferencing</li>
+            <li>• Integrated 3D and AR viewers</li>
+            <li>• Secure patient data sharing</li>
+        </ul>
+        <p style="font-size: 14px; margin-top: 15px;"><strong>Recent cases available for collaboration:</strong></p>
+        <p style="font-size: 14px;">• brain_scan_001.jpg for Patient P001<br>• mri_t1_002.png for Patient P002</p>
+        <p style="font-size: 14px; margin-top: 15px;">Use the dashboard to view all patient reports or return to the main interface at any time.</p>
+    </div>
+
+    <div class="grid">
+        <!-- Quick Start Section -->
+        <div class="card">
+            <h3>📋 Quick Start</h3>
+            <p>Click on any patient file below to start a collaborative session. You'll be able to share video calls, annotations, and discuss cases in real-time.</p>
+            <div style="margin: 20px 0;">
+                <a href="{{ url_for('patient_reports') }}" class="btn">📊 View All Patient Reports</a>
+                <a href="{{ url_for('collaboration_main') }}" class="btn">🏥 Go to Full Collaboration Hub</a>
+            </div>
+        </div>
+
+        <!-- Active Collaboration Features -->
+        <div class="card">
+            <h3>🔗 Active Collaboration Features</h3>
+            <ul>
+                <li>🎥 Video conferencing with Jitsi Meet</li>
+                <li>✏️ Real-time image annotations</li>
+                <li>👥 Multi-doctor consultations</li>
+                <li>📺 3D viewer integration</li>
+                <li>🎯 Secure patient data sharing</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Recent Collaborative Cases -->
+    <div class="card">
+        <h3>📁 Recent Collaborative Cases</h3>
+        <table id="collaboration-cases-table">
+            <thead>
+                <tr>
+                    <th>Patient</th>
+                    <th>File</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Sample Patient 1</td>
+                    <td>Te-gl_0010.jpg</td>
+                    <td><span class="status-review">● Available for Collaboration</span></td>
+                    <td>
+                        <div style="display: flex; flex-direction: column; gap: 5px;">
+                            <a href="{{ url_for('collaborate', filename='Te-gl_0010.jpg') }}" class="btn-small" style="background: #2563eb;">Start Session</a>
+                            <a href="{{ url_for('viewer3d', filename='Te-gl_0010.jpg') }}" class="btn-small" style="background: #9b59b6;">🧠 View 3D</a>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Sample Patient 2</td>
+                    <td>Te-me_0010.jpg</td>
+                    <td><span class="status-review">● Available for Collaboration</span></td>
+                    <td>
+                        <div style="display: flex; flex-direction: column; gap: 5px;">
+                            <a href="{{ url_for('collaborate', filename='Te-me_0010.jpg') }}" class="btn-small" style="background: #2563eb;">Start Session</a>
+                            <a href="{{ url_for('ar_viewer', filename='Te-me_0010.jpg') }}" class="btn-small" style="background: #9b59b6;">🎯 View AR</a>
+                        </div>
+                    </td>
+                </tr>
+                {% if predictions %}
+                    {% for prediction in predictions %}
+                    {% if not prediction.reviewed %}
+                    <tr>
+                        <td>Patient {{ prediction.user_id }}</td>
+                        <td>{{ prediction.filename[:30] }}...</td>
+                        <td><span class="status-review">● Ready for Review</span></td>
+                        <td>
+                            <div style="display: flex; flex-direction: column; gap: 5px;">
+                                <button class="btn-small btn-success" onclick="openReportModal({{ prediction.user_id }}, '{{ prediction.filename }}', '{{ prediction.predicted_class }}', {{ prediction.accuracy }})">Write Report</button>
+                                <a href="{{ url_for('collaborate', filename=prediction.filename) }}" class="btn-small" style="background: #8e44ad;">👩‍⚕️ Collaborate</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                {% endif %}
+                <tr>
+                    <td colspan="4" style="text-align: center; color: #6b7280; font-style: italic;">
+                        More cases become available as patients complete their analyses.<br>
+                        Check back after new patient submissions or use the full Collaboration Hub.
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Dashboard functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Doctor dashboard loaded successfully');
+            // Set current date in modal
+            const currentDate = new Date().toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            document.getElementById('current-date').textContent = currentDate;
+        });
+
+        // Open report writing modal
+        function openReportModal(userId, filename, aiPrediction, confidence) {
+            document.getElementById('patient-id-display').textContent = userId;
+            document.getElementById('image-filename-display').textContent = filename;
+            document.getElementById('ai-prediction-display').textContent = aiPrediction;
+            document.getElementById('confidence-display').textContent = confidence + '%';
+
+            // Set form values
+            document.getElementById('report-user-id').value = userId;
+            document.getElementById('report-filename').value = filename;
+
+            // Default the AI prediction as the doctor's diagnosis
+            document.getElementById('corrected-class').value = aiPrediction;
+
+            // Clear previous form data
+            document.getElementById('clinical-summary').value = '';
+            document.getElementById('treatment-recommendations').value = '';
+            document.getElementById('notes').value = '';
+
+            // Show modal
+            document.getElementById('report-modal').style.display = 'block';
+        }
+
+        // Close report writing modal
+        function closeReportModal() {
+            document.getElementById('report-modal').style.display = 'none';
+        }
+
+        // Submit doctor report
+        function submitReport() {
+            const formData = new FormData(document.getElementById('report-form'));
+
+            // Basic validation
+            if (!formData.get('clinical_summary').trim()) {
+                alert('Please provide a clinical summary.');
+                return;
+            }
+
+            // Show loading state
+            const submitBtn = document.querySelector('button[onclick="submitReport()"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Submitting...';
+            submitBtn.disabled = true;
+
+            // Submit via fetch
+            fetch('{{ url_for("submit_doctor_report") }}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Get the latest report ID by querying doctor_feedback
+                    const userId = formData.get('user_id');
+                    const filename = formData.get('filename');
+
+                    fetch('{{ url_for("get_latest_report_id") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            user_id: userId,
+                            filename: filename
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(reportData => {
+                        const reportId = reportData.report_id;
+
+                        // Create download options modal
+                        const downloadModal = document.createElement('div');
+                        downloadModal.style.cssText = `
+                            position: fixed;
+                            top: 0;
+                            left: 0;
+                            width: 100%;
+                            height: 100%;
+                            background: rgba(0,0,0,0.8);
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            z-index: 10000;
+                        `;
+
+                        downloadModal.innerHTML = `
+                            <div style="background: white; padding: 30px; border-radius: 15px; width: 500px; max-width: 90vw; position: relative;">
+                                <h2 style="margin-top: 0; color: #2E86AB;">Report Submitted Successfully!</h2>
+                                <p>Your medical report has been saved. You can now download or print the report:</p>
+
+                                <div style="display: flex; gap: 10px; flex-direction: column; align-items: center;">
+                                    <button onclick="downloadReport('${reportId || '0'}')" class="btn" style="width: 100%; text-align: center; display: block; cursor: pointer;">
+                                        📄 Download TXT Report
+                                    </button>
+                                    <button onclick="viewReport('${reportId || '0'}')" class="btn" style="background: #27ae60; width: 100%; text-align: center; display: block;">
+                                        👁️ View Full Report
+                                    </button>
+                                    <button onclick="printReport('${reportId || '0'}')" class="btn" style="background: #f39c12; width: 100%;">
+                                        🖨️ Print Report
+                                    </button>
+                                    <button onclick="closeDownloadModal()" class="btn" style="background: #95a5a6; width: 100%;">
+                                        Continue to Dashboard
+                                    </button>
+                                </div>
+
+                                <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; font-size: 14px;">
+                                    <strong>Note:</strong> The report contains comprehensive patient information including:
+                                    <ul style="margin-top: 8px;">
+                                        <li>Patient details and report date</li>
+                                        <li>Image analysis results</li>
+                                        <li>Doctor's diagnosis and recommendations</li>
+                                        <li>Treatment plan and follow-up advice</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        `;
+
+                        // Add close modal function
+                        window.closeDownloadModal = function() {
+                            document.body.removeChild(downloadModal);
+                            closeReportModal();
+                            // Reload page to update the pending reviews list
+                            location.reload();
+                        };
+
+                        // Add report actions
+                        window.downloadReport = function(reportId) {
+                            window.open('/download_doctor_report/' + reportId, '_blank');
+                        };
+
+                        window.viewReport = function(reportId) {
+                            window.open('/view_doctor_report/' + reportId, '_blank');
+                        };
+
+                        window.printReport = function(reportId) {
+                            window.open('/view_doctor_report/' + reportId, '_blank');
+                            setTimeout(() => window.print(), 1000); // Give page time to load
+                        };
+
+                        document.body.appendChild(downloadModal);
+                    })
+                    .catch(error => {
+                        alert('Report submitted, but there was an issue generating download links. You can find the report in the Patient Reports section.');
+                        closeReportModal();
+                        location.reload();
+                    });
+                } else {
+                    alert('Error submitting report: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error submitting report. Please try again.');
+            })
+            .finally(() => {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            });
+        }
+
+        // Old download function removed - now using direct window.open in the modal
+
+        // Print page function
+        function printPage() {
+            window.print();
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('report-modal');
+            if (event.target == modal) {
+                closeReportModal();
+            }
+        };
+    </script>
+</body>
+</html>

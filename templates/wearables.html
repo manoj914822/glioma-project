@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wearables & Symptoms</title>
+  <style>
+    body { margin:0; font-family: Arial, sans-serif; background:#0f172a; color:#e2e8f0; }
+    header { background:#1e293b; padding:12px 18px; }
+    .container { padding: 16px; }
+    .card { background:#111827; border: 1px solid #1f2937; border-radius:10px; padding:12px; margin-bottom:12px; }
+    .btn { background:#2563eb; color:#fff; border:0; padding:8px 12px; border-radius:6px; cursor:pointer; }
+    input { padding:8px; border-radius:6px; border:1px solid #1f2937; background:#0b1220; color:#e2e8f0; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { padding:8px; border-bottom:1px solid #1f2937; }
+    canvas { max-width: 100%; }
+  </style>
+</head>
+<body>
+  <header>
+    <h2>Wearables & Symptom Trends</h2>
+  </header>
+  <div class="container">
+    <div class="card">
+      <h3>Upload CSV (timestamp,headaches,seizures,sleep_hours,heart_rate,notes)</h3>
+      <form method="POST" action="{{ url_for('upload_wearables') }}" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".csv" />
+        <button class="btn">Upload</button>
+      </form>
+    </div>
+    <div class="card">
+      <h3>Recent Records</h3>
+      <table>
+        <thead><tr><th>Time</th><th>Headaches</th><th>Seizures</th><th>Sleep (h)</th><th>HR</th><th>Notes</th></tr></thead>
+        <tbody>
+          {% for r in records %}
+          <tr>
+            <td>{{ r.ts }}</td>
+            <td>{{ r.headaches }}</td>
+            <td>{{ r.seizures }}</td>
+            <td>{{ r.sleep_hours }}</td>
+            <td>{{ r.heart_rate }}</td>
+            <td>{{ r.notes }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Risk Trend</h3>
+      <canvas id="chart" height="120"></canvas>
+    </div>
+  </div>
+  <div id="chart-data" data-labels='{{ chart.labels|tojson|e }}' data-risk='{{ chart.risk|tojson|e }}' style="display:none;"></div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    (function(){
+      var holder = document.getElementById('chart-data');
+      var labels = JSON.parse(holder.getAttribute('data-labels') || '[]');
+      var risk = JSON.parse(holder.getAttribute('data-risk') || '[]');
+      var ctx = document.getElementById('chart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: { labels: labels, datasets: [{ label: 'Risk', data: risk, borderColor:'#f43f5e', fill:false }] },
+        options: { scales: { y: { min: 0, max: 100 } } }
+      });
+    })();
+  </script>
+</body>
+</html>
+
+

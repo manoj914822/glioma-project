@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Report - GLIOMA</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        .report-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #2E86AB;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #2E86AB;
+            margin: 0;
+        }
+        .header .subtitle {
+            color: #666;
+            font-size: 16px;
+        }
+        .section {
+            margin-bottom: 25px;
+        }
+        .section-title {
+            color: #2E86AB;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .patient-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .info-item {
+            margin-bottom: 8px;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #555;
+        }
+        .doctor-signature {
+            border-top: 1px solid #ccc;
+            padding-top: 20px;
+            margin-top: 30px;
+            text-align: right;
+        }
+        .signature-line {
+            border-top: 1px solid #333;
+            width: 200px;
+            margin: 20px 0 5px auto;
+        }
+        .content-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #2E86AB;
+        }
+        .print-btn {
+            background: #2E86AB;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .logo {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #2E86AB;
+            margin-bottom: 10px;
+        }
+        @media print {
+            body { background: white; }
+            .report-container { box-shadow: none; }
+            .print-btn { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-container">
+        <div class="logo">GLIOMA</div>
+        <div class="header">
+            <h1>MEDICAL REPORT</h1>
+            <div class="subtitle">Brain Tumor Analysis & Diagnosis</div>
+        </div>
+
+        <!-- Patient Information -->
+        <div class="section">
+            <div class="section-title">PATIENT INFORMATION</div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Patient ID:</span> P{{ report.user_id }}
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Patient Name:</span> {{ report.patient_name or 'Not specified' }}
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Medical Image:</span> {{ report.filename }}
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Report Date:</span> {{ report.created_at }}
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Analysis Results -->
+        <div class="section">
+            <div class="section-title">AI ANALYSIS RESULTS</div>
+            <div class="patient-info">
+                <div class="info-item">
+                    <span class="info-label">AI Prediction:</span> {{ report.predicted_class }}
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Doctor's Diagnosis:</span> 
+                    <strong>{{ report.corrected_class if report.corrected_class else report.predicted_class }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clinical Summary -->
+        {% if report.clinical_summary %}
+        <div class="section">
+            <div class="section-title">CLINICAL SUMMARY</div>
+            <div class="content-box">
+                {{ report.clinical_summary | replace('\n', '<br>') | safe }}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Treatment Recommendations -->
+        {% if report.treatment_recommendations %}
+        <div class="section">
+            <div class="section-title">TREATMENT RECOMMENDATIONS</div>
+            <div class="content-box">
+                {{ report.treatment_recommendations | replace('\n', '<br>') | safe }}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Additional Notes -->
+        {% if report.notes %}
+        <div class="section">
+            <div class="section-title">ADDITIONAL NOTES</div>
+            <div class="content-box">
+                {{ report.notes | replace('\n', '<br>') | safe }}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Doctor Signature -->
+        <div class="doctor-signature">
+            <div><strong>Prepared by:</strong></div>
+            <div>Dr. {{ report.doctor_name }}</div>
+            <div>Neurosurgeon</div>
+            <div>GLIOMA Medical Team</div>
+            <div class="signature-line"></div>
+            <div>Signature</div>
+        </div>
+
+        <button class="print-btn" onclick="window.print()">Print Report</button>
+    </div>
+
+    <script>
+        // Add current date to the report
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateElements = document.querySelectorAll('.info-item:contains("Report Date")');
+            if (dateElements.length > 0) {
+                // Format the date nicely
+                const date = new Date();
+                const formattedDate = date.toLocaleDateString('en-US', {
+                    year: 'numeric', month: 'long', day: 'numeric'
+                });
+                // We'll keep the original date from the database
+            }
+        });
+    </script>
+</body>
+</html>

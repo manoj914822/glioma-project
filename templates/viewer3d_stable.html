@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stable 3D Medical Viewer - GLIOMA</title>
+  <style>
+    body { 
+      margin: 0; 
+      overflow: hidden; 
+      font-family: Arial, sans-serif; 
+      background: #0a0a0a; 
+      color: white;
+    }
+    
+    #hud {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.9);
+      color: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      z-index: 100;
+      border: 1px solid #4fc3f7;
+      max-width: 350px;
+    }
+    
+    #hud h3 { 
+      margin: 0 0 10px 0; 
+      color: #4fc3f7; 
+      font-size: 18px; 
+    }
+    
+    #hud .controls { 
+      font-size: 12px; 
+      margin: 5px 0;
+    }
+    
+    #hud .medical-info { 
+      margin-top: 10px; 
+      padding-top: 10px; 
+      border-top: 1px solid #4fc3f7; 
+    }
+    
+    #loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #4fc3f7;
+      font-size: 18px;
+      z-index: 10;
+      text-align: center;
+    }
+    
+    #error {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #ff6b6b;
+      font-size: 16px;
+      text-align: center;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 20px;
+      border-radius: 8px;
+      z-index: 10;
+      display: none;
+    }
+    
+    #viewer-container {
+      width: 100%;
+      height: 100vh;
+      position: relative;
+    }
+    
+    .control-panel {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.9);
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #4fc3f7;
+      z-index: 100;
+    }
+    
+    .control-panel button {
+      background: #4fc3f7;
+      color: black;
+      border: none;
+      padding: 8px 12px;
+      margin: 5px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    
+    .control-panel button:hover {
+      background: #29b6f6;
+    }
+    
+    .annotation-tools {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: rgba(0, 0, 0, 0.9);
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #4fc3f7;
+      z-index: 100;
+    }
+    
+    .annotation-tools h4 {
+      margin: 0 0 10px 0;
+      color: #4fc3f7;
+    }
+    
+    .tool-buttons {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+    }
+    
+    .tool-btn {
+      background: #4fc3f7;
+      color: black;
+      border: none;
+      padding: 6px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    
+    .tool-btn.active {
+      background: #29b6f6;
+    }
+    
+    .color-palette {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 3px;
+      margin-top: 8px;
+    }
+    
+    .color-btn {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #ddd;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    
+    .color-btn.active {
+      border-color: #fff;
+    }
+    
+    .progress-bar {
+      width: 200px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
+      margin: 10px auto;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: #4fc3f7;
+      width: 0%;
+      transition: width 0.3s;
+    }
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <h3>Stable 3D Medical Viewer</h3>
+    <div><strong>Filename:</strong> {{ filename }}</div>
+    <div class="controls">Zoom: Mouse Wheel | Pan: Right Click + Drag</div>
+    <div class="controls">Rotate: Left Click + Drag | Annotate: Select Tool + Click</div>
+    <div class="medical-info">
+      <div><strong>Medical Context:</strong> Brain Tumor Analysis</div>
+      <div><strong>Purpose:</strong> Diagnostic Review & Annotation</div>
+      <div><strong>View:</strong> 3D Visualization with AI Heatmap</div>
+    </div>
+    <a href="{{ url_for('userlog_page') }}" style="color:#4fc3f7; text-decoration:none; margin-top:10px; display:inline-block;">← Back to Dashboard</a>
+  </div>
+
+  <div id="loading">
+    <div>Loading 3D Medical Viewer...</div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div id="loadingText">Initializing...</div>
+  </div>
+  
+  <div id="error"></div>
+  
+  <div id="viewer-container">
+    <div class="control-panel">
+      <button onclick="toggleView('original')">Original Image</button>
+      <button onclick="toggleView('gradcam')">Grad-CAM Heatmap</button>
+      <button onclick="toggleView('overlay')">Overlay View</button>
+      <button onclick="resetView()">Reset View</button>
+      <button onclick="toggleAnnotations()">Toggle Annotations</button>
+    </div>
+    
+    <div class="annotation-tools">
+      <h4>Annotation Tools</h4>
+      <div class="tool-buttons">
+        <button class="tool-btn" data-tool="pointer">Pointer</button>
+        <button class="tool-btn" data-tool="rectangle">Rectangle</button>
+        <button class="tool-btn" data-tool="circle">Circle</button>
+        <button class="tool-btn" data-tool="arrow">Arrow</button>
+        <button class="tool-btn" data-tool="text">Text</button>
+        <button class="tool-btn" data-tool="clear">Clear</button>
+      </div>
+      <div class="color-palette">
+        <div class="color-btn active" style="background: #ff0000;" data-color="#ff0000"></div>
+        <div class="color-btn" style="background: #00ff00;" data-color="#00ff00"></div>
+        <div class="color-btn" style="background: #0000ff;" data-color="#0000ff"></div>
+        <div class="color-btn" style="background: #ffff00;" data-color="#ffff00"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Latest stable Three.js version -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r160/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.min.js"></script>
+  
+  <script>
+    // Global variables
+    let scene, camera, renderer, controls;
+    let originalTexture, gradcamTexture, overlayTexture;
+    let currentView = 'overlay';
+    let isInitialized = false;
+    let annotations = [];
+    let currentTool = 'pointer';
+    let currentColor = '#ff0000';
+    let annotationMode = false;
+
+    // Image URLs
+    const originalImageUrl = "{{ url_for('static', filename='uploads/' + filename) }}";
+    const gradcamImageUrl = "{{ url_for('static', filename=gradcam_filename) }}";
+
+    // Initialize the 3D viewer with comprehensive error handling
+    async function init() {
+      try {
+        updateLoading('Initializing 3D engine...', 10);
+        
+        // Check if Three.js is available
+        if (typeof THREE === 'undefined') {
+          throw new Error('Three.js library failed to load');
+        }
+
+        // Create scene
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a0a);
+
+        // Create camera
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+
+        // Create renderer with fallback options
+        try {
+          renderer = new THREE.WebGLRenderer({ 
+            antialias: true,
+            alpha: true,
+            preserveDrawingBuffer: true // For annotation capture
+          });
+        } catch (error) {
+          console.warn('WebGL not available, trying fallback renderer');
+          renderer = new THREE.WebGLRenderer({
+            antialias: false,
+            alpha: true
+          });
+        }
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit pixel ratio for performance
+        document.getElementById('viewer-container').appendChild(renderer.domElement);
+
+        updateLoading('Setting up controls...', 30);
+        
+        // Add controls with error handling
+        try {
+          controls = new THREE.OrbitControls(camera, renderer.domElement);
+          controls.enableDamping = true;
+          controls.dampingFactor = 0.05;
+          controls.rotateSpeed = 0.5;
+          controls.minDistance = 1;
+          controls.maxDistance = 20;
+        } catch (error) {
+          console.warn('OrbitControls failed, using basic camera controls');
+          // Fallback to basic mouse controls
+          setupBasicControls();
+        }
+
+        updateLoading('Setting up lighting...', 50);
+        
+        // Add lighting
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(1, 1, 1);
+        scene.add(directionalLight);
+
+        updateLoading('Loading medical images...', 70);
+        
+        // Load textures with comprehensive error handling
+        await loadTextures();
+
+        updateLoading('Finalizing setup...', 90);
+        
+        // Handle window resize
+        window.addEventListener('resize', onWindowResize);
+
+        // Setup annotation tools
+        setupAnnotationTools();
+
+        isInitialized = true;
+        updateLoading('Ready!', 100);
+        
+        // Hide loading message after a brief delay
+        setTimeout(() => {
+          document.getElementById('loading').style.display = 'none';
+          animate();
+        }, 500);
+
+      } catch (error) {
+        showError('Failed to initialize 3D viewer: ' + error.message);
+      }
+    }
+
+    // Load textures with enhanced error handling and retry mechanism
+    async function loadTextures() {
+      const textureLoader = new THREE.TextureLoader();
+      let loadedCount = 0;
+      const totalTextures = 2;
+
+      // Update loading progress
+      function updateProgress() {
+        loadedCount++;
+        const progress = 70 + Math.round((loadedCount / totalTextures) * 25);
+        updateLoading(`Loading images... (${loadedCount}/${totalTextures})`, progress);
+      }
+
+      // Load textures with retry mechanism
+      async function loadTextureWithRetry(url, type, maxRetries = 3) {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            return await new Promise((resolve, reject) => {
+              textureLoader.load(
+                url,
+                resolve,
+                undefined,
+                reject
+              );
+            });
+          } catch (error) {
+            console.warn(`Attempt ${attempt} failed for ${type} image:`, error);
+            if (attempt === maxRetries) {
+              throw new Error(`Failed to load ${type} image after ${maxRetries} attempts`);
+            }
+            await new Promise(resolve => setTimeout(resolve, 500 * attempt)); // Exponential backoff
+          }
+        }
+      }
+
+      try {
+        // Load original image
+        originalTexture = await loadTextureWithRetry(originalImageUrl, 'original');
+        originalTexture.colorSpace = THREE.SRGBColorSpace;
+        console.log('Original image loaded successfully');
+        updateProgress();
+
+        // Load Grad-CAM image
+        gradcamTexture = await loadTextureWithRetry(gradcamImageUrl, 'gradcam');
+        gradcamTexture.colorSpace = THREE.SRGBColorSpace;
+        console.log('Grad-CAM image loaded successfully');
+        updateProgress();
+
+        // Create overlay texture
+        createOverlayTexture();
+        createPlanes();
+
+      } catch (error) {
+        throw new Error('Texture loading failed: ' + error.message);
+      }
+    }
+
+    // Create overlay texture by combining images
+    function createOverlayTexture() {
+      if (!originalTexture || !gradcamTexture) return;
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = originalTexture.image.width;
+      canvas.height = originalTexture.image.height;
+
+      // Draw original image
+      ctx.drawImage(originalTexture.image, 0, 0);
+      
+      // Draw Grad-CAM with transparency
+      ctx.globalAlpha = 0.6;
+      ctx.drawImage(gradcamTexture.image, 0, 0);
+      ctx.globalAlpha = 1.0;
+
+      overlayTexture = new THREE.CanvasTexture(canvas);
+      overlayTexture.colorSpace = THREE.SRGBColorSpace;
+    }
+
+    // Create 3D planes for the images
+    function createPlanes() {
+      if (!originalTexture || !gradcamTexture || !overlayTexture) return;
+
+      // Clear existing planes
+      while(scene.children.length > 2) { // Keep lights
+        scene.remove(scene.children[scene.children.length - 1]);
+      }
+
+      // Create materials for different views
+      const originalMaterial = new THREE.MeshBasicMaterial({ 
+        map: originalTexture,
+        transparent: true,
+        opacity: 1.0
+      });
+
+      const gradcamMaterial = new THREE.MeshBasicMaterial({ 
+        map: gradcamTexture,
+        transparent: true,
+        opacity: 1.0
+      });
+
+      const overlayMaterial = new THREE.MeshBasicMaterial({ 
+        map: overlayTexture,
+        transparent: true,
+        opacity: 1.0
+      });
+
+      // Create plane geometry with proper aspect ratio
+      const aspectRatio = originalTexture.image.width / originalTexture.image.height;
+      const planeGeometry = new THREE.PlaneGeometry(aspectRatio * 3, 3);
+
+      // Create planes for each view
+      const originalPlane = new THREE.Mesh(planeGeometry, originalMaterial);
+      const gradcamPlane = new THREE.Mesh(planeGeometry, gradcamMaterial);
+      const overlayPlane = new THREE.Mesh(planeGeometry, overlayMaterial);
+
+      // Position planes slightly apart for 3D effect
+      originalPlane.position.x = -1.5;
+      gradcamPlane.position.x = 1.5;
+      overlayPlane.position.z = -0.1; // Slightly behind for depth
+
+      // Add all planes but only show the active one
+      scene.add(originalPlane);
+      scene.add(gradcamPlane);
+      scene.add(overlayPlane);
+
+      // Set initial view
+      toggleView('overlay');
+    }
+
+    // Toggle between different views
+    function toggleView(viewType) {
+      if (!isInitialized) return;
+
+      currentView = viewType;
+      
+      // Hide all planes
+      scene.children.forEach(child => {
+        if (child.isMesh) {
+          child.visible = false;
+        }
+      });
+
+      // Show the selected plane
+      switch(viewType) {
+        case 'original':
+          scene.children[2].visible = true; // Original plane
+          break;
+        case 'gradcam':
+          scene.children[3].visible = true; // Grad-CAM plane
+          break;
+        case 'overlay':
+          scene.children[4].visible = true; // Overlay plane
+          break;
+      }
+    }
+
+    // Reset camera view
+    function resetView() {
+      if (controls) {
+        controls.reset();
+        camera.position.z = 5;
+      }
+    }
+
+    // Setup annotation tools
+    function setupAnnotationTools() {
+      // Tool selection
+      document.querySelectorAll('.tool-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+          currentTool = this.getAttribute('data-tool');
+        });
+      });
+
+      // Color selection
+      document.querySelectorAll('.color-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+          currentColor = this.getAttribute('data-color');
+        });
+      });
+
+      // Add click listener for annotations
+      renderer.domElement.addEventListener('click', handleAnnotationClick);
+    }
+
+    // Handle annotation clicks
+    function handleAnnotationClick(event) {
+      if (!annotationMode || currentTool === 'pointer') return;
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      const mouse = new THREE.Vector2();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      // Create annotation object
+      const annotation = {
+        type: currentTool,
+        color: currentColor,
+        position: { x: mouse.x, y: mouse.y },
+        timestamp: new Date().toISOString()
+      };
+
+      annotations.push(annotation);
+      drawAnnotation(annotation);
+    }
+
+    // Draw annotation on the canvas
+    function drawAnnotation(annotation) {
+      // This would be implemented to draw annotations on a separate canvas layer
+      console.log('Drawing annotation:', annotation);
+      // Implementation would depend on the annotation type
+    }
+
+    // Toggle annotation mode
+    function toggleAnnotations() {
+      annotationMode = !annotationMode;
+      const btn = document.querySelector('button[onclick="toggleAnnotations()"]');
+      btn.textContent = annotationMode ? 'Hide Annotations' : 'Show Annotations';
+      btn.style.background = annotationMode ? '#27ae60' : '#4fc3f7';
+    }
+
+    // Basic controls fallback
+    function setupBasicControls() {
+      let isMouseDown = false;
+      let previousMousePosition = { x: 0, y: 0 };
+
+      renderer.domElement.addEventListener('mousedown', (event) => {
+        isMouseDown = true;
+        previousMousePosition = { x: event.clientX, y: event.clientY };
+      });
+
+      renderer.domElement.addEventListener('mousemove', (event) => {
+        if (!isMouseDown) return;
+        
+        const deltaMove = {
+          x: event.clientX - previousMousePosition.x,
+          y: event.clientY - previousMousePosition.y
+        };
+
+        if (event.ctrlKey || event.metaKey) {
+          // Pan
+          camera.position.x -= deltaMove.x * 0.01;
+          camera.position.y += deltaMove.y * 0.01;
+        } else {
+          // Rotate
+          camera.rotation.y += deltaMove.x * 0.01;
+          camera.rotation.x += deltaMove.y * 0.01;
+        }
+
+        previousMousePosition = { x: event.clientX, y: event.clientY };
+      });
+
+      renderer.domElement.addEventListener('mouseup', () => {
+        isMouseDown = false;
+      });
+
+      renderer.domElement.addEventListener('wheel', (event) => {
+        camera.position.z += event.deltaY * 0.01;
+        camera.position.z = Math.max(1, Math.min(20, camera.position.z));
+      });
+    }
+
+    // Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+      
+      if (controls) {
+        controls.update();
+      }
+      
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+      }
+    }
+
+    // Handle window resize
+    function onWindowResize() {
+      if (camera && renderer) {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+    }
+
+    // Update loading progress
+    function updateLoading(text, progress) {
+      document.getElementById('loadingText').textContent = text;
+      document.getElementById('progressFill').style.width = progress + '%';
+    }
+
+    // Show error message
+    function showError(message) {
+      const errorDiv = document.getElementById('error');
+      errorDiv.innerHTML = `
+        <h3>Error Loading 3D Viewer</h3>
+        <p>${message}</p>
+        <button onclick="location.reload()">Retry</button>
+        <button onclick="window.location.href='{{ url_for('userlog_page') }}'">Back to Dashboard</button>
+        <button onclick="loadFallbackViewer()">Try Basic Viewer</button>
+      `;
+      errorDiv.style.display = 'block';
+      document.getElementById('loading').style.display = 'none';
+    }
+
+    // Fallback viewer for when 3D fails
+    function loadFallbackViewer() {
+      window.location.href = "{{ url_for('image_report', filename=filename) }}";
+    }
+
+    // Initialize when page loads
+    window.addEventListener('DOMContentLoaded', init);
+
+    // Handle page unload
+    window.addEventListener('beforeunload', function() {
+      if (renderer) {
+        renderer.dispose();
+      }
+    });
+  </script>
+</body>
+</html>

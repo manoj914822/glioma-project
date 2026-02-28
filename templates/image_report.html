@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Analysis Report</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background: rgba(0,0,0,0.8);
+            padding: 15px 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .navbar ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+        
+        .navbar li {
+            display: inline-block;
+            margin: 0 20px;
+        }
+        
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        
+        .navbar a:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .container {
+            margin-top: 80px;
+            padding: 20px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .report-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .report-panel {
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .report-panel h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .image-display {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .image-display img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .prediction-summary {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .prediction-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+        }
+        
+        .prediction-label {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .prediction-value {
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .risk-indicator {
+            padding: 10px 20px;
+            border-radius: 25px;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            margin: 10px 0;
+        }
+        
+        .risk-low { background: #2ECC71; }
+        .risk-medium { background: #F39C12; }
+        .risk-high { background: #E74C3C; }
+        
+        .recommendations {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .recommendations ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .recommendations li {
+            margin-bottom: 8px;
+            color: #1565c0;
+        }
+        
+        .chart-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .chart-container img {
+            max-width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .technical-details {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .technical-details table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .technical-details td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .technical-details td:first-child {
+            font-weight: bold;
+            color: #333;
+            width: 40%;
+        }
+        
+        .download-section {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .download-btn {
+            background: #667eea;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+            transition: background 0.3s;
+        }
+        
+        .download-btn:hover {
+            background: #5a6fd8;
+        }
+        
+        @media (max-width: 768px) {
+            .report-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .navbar li {
+                display: block;
+                margin: 5px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <ul>
+            <li><a href="{{ url_for('userlog_page') }}">🏠 Home</a></li>
+            <li><a href="{{ url_for('chatbot_page') }}">💬 Chatbot</a></li>
+            <li><a href="{{ url_for('logout') }}">🚪 Logout</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <h1>🔬 Detailed Analysis Report</h1>
+            <p>Comprehensive analysis for: {{ filename }}</p>
+        </div>
+
+        <div class="report-grid">
+            <!-- Left Panel: Image and Prediction -->
+            <div class="report-panel">
+                <h3>📸 Image Analysis</h3>
+                
+                <div class="image-display">
+                    <img src="{{ url_for('static', filename='uploads/' + filename) }}" alt="Brain Scan">
+                </div>
+                <div class="image-display" style="margin-top:10px;">
+                    <img src="{{ url_for('static', filename=gradcam2d) }}" alt="Grad-CAM" style="max-width:100%; max-height:300px;">
+                </div>
+                
+                <div class="prediction-summary">
+                    <div class="prediction-item">
+                        <span class="prediction-label">🎯 Prediction:</span>
+                        <span class="prediction-value">{{ predicted_class }}</span>
+                    </div>
+                    <div class="prediction-item">
+                        <span class="prediction-label">📊 Accuracy:</span>
+                        <span class="prediction-value">{{ "%.2f"|format(accuracy) }}%</span>
+                    </div>
+                    <div class="prediction-item">
+                        <span class="prediction-label">🕒 Analysis Time:</span>
+                        <span class="prediction-value">{{ timestamp }}</span>
+                    </div>
+                    <div class="prediction-item">
+                        <span class="prediction-label">🔍 Confidence:</span>
+                        <span class="prediction-value">{{ analytics.confidence_level }}</span>
+                    </div>
+                </div>
+                
+                <div class="risk-indicator risk-{{ analytics.risk_assessment.level.lower() }}">
+                    🚨 Risk Level: {{ analytics.risk_assessment.level }}
+                </div>
+                
+                <p style="color: #666; font-size: 14px; text-align: center;">
+                    {{ analytics.risk_assessment.description }}
+                </p>
+            </div>
+
+            <!-- Right Panel: Analytics and Charts -->
+            <div class="report-panel">
+                <h3>📊 Visual Analytics</h3>
+                
+                {% if analytics.chart_filename %}
+                <div class="chart-container">
+                    <img src="{{ url_for('static', filename=analytics.chart_filename) }}" alt="Analysis Charts" style="max-width:420px; width:100%; height:auto;">
+                </div>
+                {% endif %}
+                
+                <!-- 3D-like Grad-CAM Preview -->
+                <div class="report-panel" style="margin-top:20px;">
+                    <h3>🧭 3D Grad-CAM Preview</h3>
+                    <div class="image-display">
+                        <img src="{{ url_for('static', filename=gradcam3d) }}" alt="3D Grad-CAM" style="max-width:100%; max-height:320px;">
+                    </div>
+                    <p style="color:#555; font-size:14px; text-align:center;">Perspective-enhanced attention map to visualize focus regions in a 3D-like view.</p>
+                </div>
+                
+                <div class="technical-details">
+                    <h4>🔧 Technical Details</h4>
+                    <table>
+                        <tr>
+                            <td>Model Confidence:</td>
+                            <td>{{ analytics.technical_details.model_confidence }}</td>
+                        </tr>
+                        <tr>
+                            <td>Method:</td>
+                            <td>{{ analytics.technical_details.prediction_method }}</td>
+                        </tr>
+                        <tr>
+                            <td>Processing:</td>
+                            <td>{{ analytics.technical_details.image_processing }}</td>
+                        </tr>
+                        <tr>
+                            <td>Classification:</td>
+                            <td>{{ analytics.technical_details.classification_type }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Medical Recommendations -->
+        <div class="report-panel">
+            <h3>🏥 Medical Recommendations</h3>
+            <div class="recommendations">
+                <h4>📋 Recommended Actions:</h4>
+                <ul>
+                    {% for recommendation in analytics.recommendations %}
+                    <li>{{ recommendation }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            
+            <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                <p style="margin: 0; color: #856404; font-weight: bold;">
+                    ⚠️ Important: This AI analysis is for informational purposes only. 
+                    Always consult with qualified medical professionals for diagnosis and treatment decisions.
+                </p>
+            </div>
+        </div>
+
+        <!-- Download Section -->
+        <div class="download-section">
+            <h3 style="color: white; margin-bottom: 20px;">📥 Download Options</h3>
+            <a href="#" onclick="downloadReport()" class="download-btn">📄 Download PDF Report</a>
+            <a href="#" onclick="downloadChart()" class="download-btn">📊 Download Charts</a>
+            <a href="#" onclick="downloadData()" class="download-btn">📋 Download Data</a>
+            <a href="{{ url_for('viewer3d', filename=filename) }}" class="download-btn">🧠 View in 3D</a>
+        </div>
+    </div>
+
+    <script>
+        function downloadReport() {
+            // Generate PDF report
+            window.print();
+        }
+        
+        function downloadChart() {
+            const chartFile = "{{ url_for('static', filename=analytics.chart_filename) if analytics and analytics.chart_filename else '' }}";
+            if (chartFile) {
+                const link = document.createElement('a');
+                link.href = chartFile;
+                link.download = "analysis_chart_{{ filename }}.png";
+                link.click();
+            } else {
+                alert('No chart available for download');
+            }
+        }
+        
+        function downloadData() {
+            // Create CSV data
+            const data = [
+                ['Filename', '{{ filename }}'],
+                ['Prediction', '{{ predicted_class }}'],
+                ['Accuracy', '{{ "%.2f"|format(accuracy) }}%'],
+                ['Confidence Level', '{{ analytics.confidence_level }}'],
+                ['Risk Level', '{{ analytics.risk_assessment.level }}'],
+                ['Analysis Time', '{{ timestamp }}']
+            ];
+            
+            let csvContent = "data:text/csv;charset=utf-8,";
+            data.forEach(row => {
+                csvContent += row.join(",") + "\n";
+            });
+            
+            const link = document.createElement('a');
+            link.href = encodeURI(csvContent);
+            link.download = "analysis_data_{{ filename }}.csv";
+            link.click();
+        }
+
+    </script>
+</body>
+</html>

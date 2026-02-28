@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tele-Oncology Collaboration - GLIOMA</title>
+  <style>
+    body { margin:0; font-family: Arial, sans-serif; background: #0f172a; color: #e2e8f0; }
+    header { background:#1e293b; padding:20px; text-align: center; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+    .card { background:#111827; border:1px solid #1f2937; border-radius:10px; padding:20px; }
+    .btn { background:#2563eb; color:#fff; border:0; padding:12px 20px; border-radius:8px; cursor:pointer; text-decoration: none; display: inline-block; margin: 10px 5px; }
+    .btn:hover { background: #1d4ed8; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 12px; border-bottom: 1px solid #1f2937; text-align: left; }
+    th { background: #1e293b; }
+    .status-ready { color: #10b981; }
+    .status-none { color: #6b7280; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🩺 Tele-Oncology Collaboration Hub</h1>
+    <p>Welcome, Dr. {{ doctor_name }}! Start collaborative sessions for remote consultations.</p>
+  </header>
+
+  <div class="container">
+    <div class="grid">
+      <div class="card">
+        <h3>📋 Quick Start</h3>
+        <p>Click on any patient file below to start a collaborative session. You'll be able to share video calls, annotations, and discuss cases in real-time.</p>
+        <div style="margin: 20px 0;">
+          <a href="{{ url_for('patient_reports') }}" class="btn">📊 View All Patient Reports</a>
+          <a href="{{ url_for('doctor_dashboard') }}" class="btn">🏥 Back to Dashboard</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🔗 Active Collaboration Features</h3>
+        <ul>
+          <li>🎥 Video conferencing with Jitsi Meet</li>
+          <li>✏️ Real-time image annotations</li>
+          <li>👥 Multi-doctor consultations</li>
+          <li>📺 3D viewer integration</li>
+          <li>🎯 Secure patient data sharing</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>📁 Recent Collaborative Cases</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Patient</th>
+            <th>File</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="recent-cases">
+          <tr>
+            <td colspan="4" style="text-align: center; color: #6b7280;">Loading recent cases...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // Load recent collaboration cases
+    document.addEventListener('DOMContentLoaded', function() {
+      // This would normally fetch from an API endpoint
+      // For now, show placeholder data
+      setTimeout(() => {
+        const tbody = document.getElementById('recent-cases');
+        tbody.innerHTML = `
+          <tr>
+            <td>Patient P001</td>
+            <td>brain_scan_001.jpg</td>
+            <td><span class="status-ready">● Available for Collaboration</span></td>
+            <td><a href="{{ url_for('collaborate', filename='brain_scan_001.jpg') }}" class="btn">Start Session</a></td>
+          </tr>
+          <tr>
+            <td>Patient P002</td>
+            <td>mri_t1_002.png</td>
+            <td><span class="status-ready">● Available for Collaboration</span></td>
+            <td><a href="{{ url_for('collaborate', filename='mri_t1_002.png') }}" class="btn">Start Session</a></td>
+          </tr>
+          <tr>
+            <td colspan="4" style="text-align: center; color: #6b7280;">
+              More cases become available as patients complete their analyses.<br>
+              Check back after new patient submissions.
+            </td>
+          </tr>
+        `;
+      }, 500);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tele-Oncology Collaboration</title>
+  <style>
+    body { margin:0; font-family: Arial, sans-serif; background:#0f172a; color:#e2e8f0; }
+    header { background:#1e293b; padding:12px 18px; }
+    .main-grid { display:grid; grid-template-columns: 2fr 1fr; gap: 15px; padding: 15px; }
+    .video-card { background:#111827; border:1px solid #1f2937; border-radius:10px; padding:12px; }
+    iframe { width:100%; height: 60vh; border:0; border-radius:8px; background:#000; }
+    .viewer-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top:10px; }
+    .viewer-frame { width:100%; height: 25vh; border:2px solid #4fc3f7; border-radius:6px; background:#000; overflow:hidden; }
+    .btn { background:#2563eb; color:#fff; border:0; padding:8px 12px; border-radius:6px; cursor:pointer; text-decoration: none; display: inline-block; }
+    .btn:hover { background:#1d4ed8; }
+    input, textarea { width:100%; padding:8px; border-radius:6px; border:1px solid #1f2937; background:#0b1220; color:#e2e8f0; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px; border-bottom: 1px solid #1f2937; font-size: 13px; }
+    th { text-align:left; }
+
+    /* New sections */
+    .glioma-info {
+      background:#1e293b; border:1px solid #2a4365; border-radius:8px; padding:15px; margin-top:15px;
+      max-height: 400px; overflow-y: auto;
+    }
+    .glioma-header { color:#4fc3f7; font-weight:bold; margin-bottom:10px; }
+    .treatment-options { background:#1e293b; border:1px solid #2a4365; border-radius:8px; padding:15px; margin-top:15px; }
+    .section-title { color:#00ff88; font-size:16px; margin-bottom:10px; }
+    .option-item { margin:8px 0; padding:8px; background:#111827; border-radius:4px; }
+    .option-type { font-weight:bold; color:#4fc3f7; }
+    .alternative-methods { background:#1e293b; border:1px solid #2a4365; border-radius:8px; padding:15px; margin-top:15px; }
+    .expand-btn { background:#9b59b6; float:right; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:12px; margin-top:-10px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h2>🩺 Tele-Oncology Collaboration for {{ filename }}</h2>
+    <p style="font-size:14px; margin:5px 0 0 0;">Real-time video conferencing with integrated 3D visualization and AI-assisted diagnostics</p>
+  </header>
+  <div class="main-grid">
+    <div class="video-card">
+      <h3>📹 Secure Video Conference ({{ room }})</h3>
+      <iframe allow="camera; microphone; display-capture; fullscreen; screen-share" src="https://meet.jit.si/{{ room }}"></iframe>
+
+      <!-- Embedded 3D Viewer Grid -->
+      <h4 style="margin-top:15px; color:#4fc3f7;">🔬 Shared 3D Medical Visualization</h4>
+      <div class="viewer-grid">
+        <div class="viewer-frame">
+          <iframe src="{{ url_for('viewer3d', filename=filename) }}" style="width:100%; height:100%; border:0;"></iframe>
+        </div>
+        <div class="viewer-frame">
+          <iframe src="{{ url_for('ar_viewer', filename=filename) }}" style="width:100%; height:100%; border:0;"></iframe>
+        </div>
+      </div>
+
+      <!-- Glioma Information Section -->
+      <div class="glioma-info" id="glioma-info">
+        <div class="glioma-header">🧠 Glioma Brain Tumor - Patient Information</div>
+        <button class="expand-btn" onclick="toggleInfo()">Expand</button>
+
+        <div class="section-title">📋 What are Gliomas?</div>
+        <p style="font-size:13px; line-height:1.4;">Gliomas are tumors arising from glial cells in the brain and spinal cord. They represent ~30% of all brain tumors and are classified by cell type and malignancy grade (I-IV). Early detection improves prognosis significantly.</p>
+
+        <div class="section-title">🎯 Detection Details for {{ filename }}</div>
+        <ul style="font-size:13px;">
+          <li>• AI System: Deep Learning CNN (ResNet50 Architecture)</li>
+          <li>• Processing: 4-stage enhancement pipeline</li>
+          <li>• Confidence: Assessment available in results</li>
+          <li>• Diagnosis: AI-assisted classification</li>
+          <li>• Visualization: 3D heatmaps and overlays</li>
+        </ul>
+
+        <div class="section-title">⚠️ Glioma Classification Scale</div>
+        <table style="font-size:12px;">
+          <tr><td style="color:#00ff88;"><b>Grade I:</b></td><td>Low-grade, slow-growing, pilocytic astrocytoma</td></tr>
+          <tr><td style="color:#ffff00;"><b>Grade II:</b></td><td>Low-grade diffuse gliomas (astrocytoma, oligodendroglioma)</td></tr>
+          <tr><td style="color:#ff6b35;"><b>Grade III:</b></td><td>High-grade, anaplastic tumors</td></tr>
+          <tr><td style="color:#dc143c;"><b>Grade IV:</b></td><td>Glioblastoma - most aggressive</td></tr>
+          <tr><td style="color:#4CAF50;"><b>No Tumor:</b></td><td>Healthy brain tissue</td></tr>
+        </table>
+      </div>
+
+      <!-- Treatment Options -->
+      <div class="treatment-options">
+        <div class="section-title">💊 Evidence-Based Treatment Options</div>
+
+        <div class="option-item">
+          <div class="option-type">⚔️ Surgical Intervention</div>
+          <ul style="font-size:12px; margin:5px 0;">
+            <li>• Maximal safe resection preferred</li>
+            <li>• Extent of resection correlates with survival</li>
+            <li>• Awake surgery for eloquent areas</li>
+            <li>• Laser interstitial thermal therapy alternative</li>
+          </ul>
+        </div>
+
+        <div class="option-item">
+          <div class="option-type">☢️ Radiation Therapy</div>
+          <ul style="font-size:12px; margin:5px 0;">
+            <li>• Standard: 54-60 Gy in 30 fractions</li>
+            <li>• Hypofractionated: 34 Gy in 10 fractions (GBM)</li>
+            <li>• Stereotactic radiosurgery for small tumors</li>
+            <li>• Proton therapy when available</li>
+          </ul>
+        </div>
+
+        <div class="option-item">
+          <div class="option-type">💉 Systemic Therapy</div>
+          <ul style="font-size:12px; margin:5px 0;">
+            <li>• TMZ chemotherapy (standard for GBM)</li>
+            <li>• PCV regimen for oligodendrogliomas</li>
+            <li>• Targeted therapies based on molecular profiling</li>
+            <li>• Tumor-treating fields (Optune)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Alternative Methods -->
+      <div class="alternative-methods">
+        <div class="section-title">🔄 Alternative & Emerging Methods</div>
+
+        <div class="option-item">
+          <div class="option-type">💉 Immunotherapy Approaches</div>
+          <ul style="font-size:12px; margin:5px 0;">
+            <li>• Checkpoint inhibitors (PD-1/PD-L1)</li>
+            <li>• CAR-T cell therapy (ongoing trials)</li>
+            <li>• Cancer vaccines</li>
+            <li>• Oncolytic viruses</li>
+          </ul>
+        </div>
+
+        <div class="option-item">
+          <div class="option-type">🧬 Molecular Targeted Therapies</div>
+          <ul style="font-size:12px; margin:5px 0;">
+            <li>• IDH1/2 inhibitors (ivosidenib, vorasidenib)</li>
+            <li>• PARPi for homologous recombination deficient tumors</li>
+            <li>• VEGF targeting (bevacizumab)</li>
+            <li>• PI3K pathway inhibitors</li>
+          </ul>
+        </div>
+
+        <div class="option-item">
+          <div class="option-type">🧠 Alternative Therapies</div>
+          <ul style="font-size:12px; margin:5px 0;">
+            <li>• Hyperthermia treatments</li>
+            <li>• Metabolic therapies (ketogenic diet)</li>
+            <li>• Photodynamic therapy</li>
+            <li>• Nanotechnology drug delivery</li>
+          </ul>
+        </div>
+
+        <div class="option-item">
+          <div class="option-type">🔬 Clinical Trials & Research</div>
+          <ul style="font-size:12px; margin:5px 0;">
+            <li>• National Cancer Institute trials</li>
+            <li>• ABTA Clinical Trial Information</li>
+            <li>• Immunotherapy combinations</li>
+            <li>• Medication therapy optimization</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Annotation & Medical Notes Panel -->
+    <div>
+      <div class="card">
+        <h3>📝 Real-time Annotations for {{ filename }}</h3>
+        <form id="ann-form" onsubmit="return saveAnn(event)">
+          <input type="hidden" name="user_id" value="{{ user_id }}" />
+          <div style="display:flex; gap:6px;">
+            <input name="label" placeholder="Label" />
+            <input name="x" placeholder="x" />
+            <input name="y" placeholder="y" />
+            <input name="w" placeholder="w" />
+            <input name="h" placeholder="h" />
+          </div>
+          <textarea name="note" placeholder="Add medical observation..." style="margin-top:6px;"></textarea>
+          <button class="btn" style="margin-top:6px;">Save Annotation</button>
+        </form>
+        <div id="ann-table-container" style="margin-top:10px; max-height:200px; overflow-y:auto;">
+          <table id="ann-table">
+            <thead><tr><th>When</th><th>Author</th><th>Label</th><th>Note</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:15px;">
+        <h3>📋 Collaboration Actions</h3>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button onclick="openInNewTab('{{ url_for('ar_viewer', filename=filename) }}')" class="btn" style="background:#9b59b6;">🎯 Open Full AR Experience</button>
+          <button onclick="openInNewTab('{{ url_for('image_report', filename=filename) }}')" class="btn" style="background:#f39c12;">📊 Open Full Diagnostic Report</button>
+          <button onclick="openInNewTab('{{ url_for('patient_reports') }}')" class="btn" style="background:#27ae60;">📋 Open All Patient Reports</button>
+          <button onclick="openInNewTab('{{ url_for('viewer3d', filename=filename) }}')" class="btn" style="background:#3498db;">🧠 Open 3D Viewer</button>
+          <button onclick="window.location.href='{{ url_for('userlog_page') }}'" class="btn" style="background:#95a5a6;">🏠 Exit to Dashboard</button>
+        </div>
+        <div style="margin-top:10px; font-size:12px; color:#888;">
+          💡 Actions open in new tabs to keep collaboration session active
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    async function loadAnn(){
+      const res = await fetch("{{ url_for('api_annotations', filename=filename) }}");
+      const data = await res.json();
+      const tb = document.querySelector('#ann-table tbody');
+      tb.innerHTML = '';
+      (data.annotations||[]).forEach(a=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${a.created_at}</td><td>${a.author_type}#${a.author_id}</td><td>${a.label||''}</td><td>${a.note||''}</td>`;
+        tb.appendChild(tr);
+      });
+    }
+    async function saveAnn(e){
+      e.preventDefault();
+      const form = new FormData(document.getElementById('ann-form'));
+      const res = await fetch("{{ url_for('api_annotations', filename=filename) }}", { method:'POST', body: form });
+      await res.json();
+      await loadAnn();
+      return false;
+    }
+
+    function toggleInfo(){
+      const info = document.getElementById('glioma-info');
+      const btn = document.querySelector('.expand-btn');
+      if(info.style.maxHeight === 'none' || !info.style.maxHeight){
+        info.style.maxHeight = '400px';
+        btn.textContent = 'Expand';
+      } else {
+        info.style.maxHeight = 'none';
+        btn.textContent = 'Collapse';
+      }
+    }
+
+    function openInNewTab(url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    loadAnn();
+  </script>
+</body>
+</html>

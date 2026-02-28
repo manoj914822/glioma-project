@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Assistant Chatbot</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #2C3E50 0%, #34495E 100%);
+            font-family: 'Arial', sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            color: #ECF0F1;
+        }
+        
+        .navbar {
+            background: rgba(0,0,0,0.8);
+            padding: 15px 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .navbar ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+        
+        .navbar li {
+            display: inline-block;
+            margin: 0 20px;
+        }
+        
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        
+        .navbar a:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .chat-container {
+            margin-top: 80px;
+            height: calc(100vh - 80px);
+            display: flex;
+            flex-direction: column;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            background: rgba(52, 73, 94, 0.95);
+            border-radius: 15px 15px 0 0;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .chat-header {
+            background: linear-gradient(135deg, #2C3E50, #34495E);
+            color: #ECF0F1;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #5D6D7E;
+        }
+        
+        .chat-header h1 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+        
+        .chat-header p {
+            margin: 5px 0 0 0;
+            opacity: 0.9;
+            font-size: 0.9em;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .message.user {
+            justify-content: flex-end;
+        }
+        
+        .message.bot {
+            justify-content: flex-start;
+        }
+        
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+        
+        .message.user .message-content {
+            background: #3498DB;
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.bot .message-content {
+            background: #FFFFFF;
+            color: #2C3E50;
+            border: 1px solid #BDC3C7;
+            border-bottom-left-radius: 5px;
+        }
+        
+        .message-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            margin: 0 10px;
+        }
+        
+        .message.user .message-avatar {
+            background: #5a6fd8;
+            color: white;
+            order: 2;
+        }
+        
+        .message.bot .message-avatar {
+            background: #28a745;
+            color: white;
+        }
+        
+        .chat-input-container {
+            padding: 20px;
+            background: #34495E;
+            border-top: 1px solid #5D6D7E;
+        }
+        
+        .chat-input-form {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #5D6D7E;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+            background: #2C3E50;
+            color: #ECF0F1;
+        }
+
+        .chat-input:focus {
+            border-color: #3498DB;
+        }
+        
+        .send-btn {
+            background: #3498DB;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .send-btn:hover {
+            background: #2980B9;
+        }
+        
+        .send-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .typing-indicator {
+            display: none;
+            padding: 10px 16px;
+            background: #FFFFFF;
+            border: 1px solid #BDC3C7;
+            border-radius: 18px;
+            border-bottom-left-radius: 5px;
+            max-width: 70%;
+            margin-bottom: 15px;
+            color: #2C3E50;
+        }
+        
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #999;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+        
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+        
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .quick-btn {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            padding: 8px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        
+        .quick-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .welcome-message {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+            font-style: italic;
+        }
+        
+        @media (max-width: 768px) {
+            .navbar li {
+                display: block;
+                margin: 5px 0;
+            }
+            
+            .chat-container {
+                margin-top: 60px;
+                height: calc(100vh - 60px);
+                border-radius: 0;
+            }
+            
+            .message-content {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <ul>
+            <li><a href="{{ url_for('userlog_page') }}">🏠 Home</a></li>
+            <li><a href="{{ url_for('chatbot_page') }}">💬 Chatbot</a></li>
+            <li><a href="{{ url_for('logout') }}">🚪 Logout</a></li>
+        </ul>
+    </nav>
+
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>🧠 Advanced Medical Assistant Chatbot</h1>
+            <p>Specialized in brain tumor analysis, treatment protocols, and medical guidance - User {{ user_id }}</p>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="welcome-message">
+                <p>Welcome! I'm your advanced medical assistant specialized in brain tumor analysis. I can provide comprehensive medical information including detailed tumor explanations, treatment protocols, and clinical guidance.</p>
+                
+                <div class="quick-actions">
+                    <button class="quick-btn" onclick="testChatbot()">🧪 Test Interface</button>
+                    <button class="quick-btn" onclick="testConnection()">🔗 Test Connection</button>
+                    <button class="quick-btn" onclick="sendQuickMessage('Hello')">👋 Say Hello</button>
+                    <button class="quick-btn" onclick="sendQuickMessage('What can you do?')">❓ Medical Capabilities</button>
+                    <button class="quick-btn" onclick="sendQuickMessage('Explain tumor types')">🧠 Tumor Classification</button>
+                    <button class="quick-btn" onclick="sendQuickMessage('How to upload?')">📤 Upload Process</button>
+                    <button class="quick-btn" onclick="sendQuickMessage('Astrocytoma')">🔴 Astrocytoma Info</button>
+                    <button class="quick-btn" onclick="sendQuickMessage('Glioblastoma')">🟠 Glioblastoma Info</button>
+                    <button class="quick-btn" onclick="sendQuickMessage('Ependymoma')">🔵 Ependymoma Info</button>
+                    <button class="quick-btn" onclick="sendQuickMessage('Oligodendroglioma')">🟢 Oligodendroglioma Info</button>
+                    <button class="quick-btn" onclick="sendQuickMessage('Treatment options')">🏥 Treatment Options</button>
+                    <button class="quick-btn" onclick="sendQuickMessage('Emergency symptoms')">🚨 Emergency Signs</button>
+                    <button class="quick-btn" onclick="sendQuickMessage('Hospital contacts')">🏥 Hospital Referrals</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dots">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+        </div>
+
+        <div class="chat-input-container">
+            <form class="chat-input-form" id="chatForm">
+                <input type="text" class="chat-input" id="messageInput"
+                       placeholder="Type your message here..." autocomplete="off">
+                <button type="submit" class="send-btn" id="sendBtn">Send 📤</button>
+            </form>
+            <div style="text-align: center; margin-top: 10px;">
+                <button onclick="alert('JavaScript is working!'); console.log('Debug button clicked');"
+                        style="background: #ff6b6b; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">
+                    🐛 Debug Test
+                </button>
+            </div>
+        </div>
+    </div>
+<script>
+    console.log('=== CHATBOT SCRIPT LOADING ===');
+
+    // Wait for DOM to be fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, initializing chatbot...');
+
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const chatForm = document.getElementById('chatForm');
+
+        console.log('Elements found:', {
+            chatMessages: !!chatMessages,
+            messageInput: !!messageInput,
+            sendBtn: !!sendBtn,
+            typingIndicator: !!typingIndicator,
+            chatForm: !!chatForm
+        });
+
+        if (!chatMessages || !messageInput || !sendBtn || !chatForm) {
+            console.error('Missing required elements!');
+            return;
+        }
+
+        // Auto-focus on input
+        messageInput.focus();
+
+        // Define helper functions
+        function addMessage(content, sender) {
+            console.log('Adding message:', content, 'from:', sender);
+            try {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}`;
+
+                const avatar = document.createElement('div');
+                avatar.className = 'message-avatar';
+                avatar.textContent = sender === 'user' ? '👤' : '🤖';
+
+                const messageContent = document.createElement('div');
+                messageContent.className = 'message-content';
+                messageContent.textContent = content;
+
+                messageDiv.appendChild(avatar);
+                messageDiv.appendChild(messageContent);
+
+                // Insert before typing indicator
+                if (typingIndicator && typingIndicator.parentNode) {
+                    chatMessages.insertBefore(messageDiv, typingIndicator);
+                } else {
+                    chatMessages.appendChild(messageDiv);
+                }
+
+                // Scroll to bottom
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                console.log('Message added successfully');
+            } catch (error) {
+                console.error('Error adding message:', error);
+            }
+        }
+
+        function showTypingIndicator() {
+            if (typingIndicator) {
+                typingIndicator.style.display = 'block';
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        }
+
+        function hideTypingIndicator() {
+            if (typingIndicator) {
+                typingIndicator.style.display = 'none';
+            }
+        }
+
+        function sendMessage(message) {
+            console.log('=== SENDING MESSAGE ===');
+            console.log('Message:', message);
+
+            // Add user message to chat
+            addMessage(message, 'user');
+
+            // Disable input while processing
+            messageInput.disabled = true;
+            sendBtn.disabled = true;
+
+            // Show typing indicator
+            showTypingIndicator();
+
+            // Prepare request data
+            const requestData = { message: message };
+            console.log('Request data:', requestData);
+
+            // Send to chatbot with extensive debugging
+            console.log('Making fetch request to /chat');
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => {
+                console.log('=== RESPONSE RECEIVED ===');
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                console.log('Response ok:', response.ok);
+
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        console.log('Error response text:', text);
+                        throw new Error(`HTTP ${response.status}: ${text}`);
+                    });
+                }
+
+                return response.json();
+            })
+            .then(data => {
+                console.log('=== PARSED RESPONSE DATA ===');
+                console.log('Full response:', data);
+                hideTypingIndicator();
+
+                if (data && data.response) {
+                    console.log('Bot response:', data.response);
+                    // Add bot response with delay for realism
+                    setTimeout(() => {
+                        addMessage(data.response, 'bot');
+                    }, 300);
+                } else if (data && data.error) {
+                    console.log('Error in response:', data.error);
+                    addMessage(`❌ Error: ${data.error}`, 'bot');
+                } else {
+                    console.log('Unexpected response format:', data);
+                    addMessage('❌ Unexpected response format. Please try again.', 'bot');
+                }
+            })
+            .catch(error => {
+                console.error('=== FETCH ERROR ===');
+                console.error('Error details:', error);
+                hideTypingIndicator();
+                addMessage(`❌ Connection error: ${error.message}. Please check console for details.`, 'bot');
+            })
+            .finally(() => {
+                console.log('=== REQUEST COMPLETED ===');
+                // Re-enable input
+                messageInput.disabled = false;
+                sendBtn.disabled = false;
+                messageInput.focus();
+            });
+        }
+
+        function sendQuickMessage(message) {
+            console.log('Sending quick message:', message);
+            sendMessage(message);
+        }
+
+        function testConnection() {
+            console.log('=== TESTING CONNECTION ===');
+            addMessage('🔧 Testing chatbot connection...', 'user');
+
+            // Test the main chat endpoint
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: 'test connection' })
+            })
+            .then(response => {
+                console.log('Test response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Test response data:', data);
+                if (data.response) {
+                    addMessage(`✅ Connection successful! ${data.response}`, 'bot');
+                } else {
+                    addMessage(`✅ Connection working but unexpected format: ${JSON.stringify(data)}`, 'bot');
+                }
+            })
+            .catch(error => {
+                console.error('Test connection error:', error);
+                addMessage(`❌ Connection test failed: ${error.message}. Check browser console for details.`, 'bot');
+
+                // Also test the ping endpoint
+                fetch('/ping')
+                .then(response => response.json())
+                .then(data => {
+                    addMessage(`📡 Server ping successful: ${data.status}`, 'bot');
+                })
+                .catch(pingError => {
+                    addMessage(`📡 Server ping failed: ${pingError.message}`, 'bot');
+                });
+            });
+        }
+
+        // Test message function
+        window.testChatbot = function() {
+            console.log('Testing chatbot functionality...');
+            addMessage('🧪 Testing chatbot...', 'user');
+            addMessage('✅ Chatbot interface is working!', 'bot');
+        };
+
+        // Handle form submission
+        chatForm.addEventListener('submit', function(e) {
+            console.log('Form submitted!');
+            e.preventDefault();
+            const message = messageInput.value.trim();
+            console.log('Message to send:', message);
+            if (message) {
+                sendMessage(message);
+                messageInput.value = '';
+            } else {
+                console.log('Empty message, not sending');
+            }
+        });
+
+        // Handle send button click directly
+        sendBtn.addEventListener('click', function(e) {
+            console.log('Send button clicked!');
+            e.preventDefault();
+            const message = messageInput.value.trim();
+            console.log('Button click - message:', message);
+            if (message) {
+                sendMessage(message);
+                messageInput.value = '';
+            }
+        });
+
+        // Handle Enter key
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                console.log('Enter key pressed!');
+                e.preventDefault();
+                const message = messageInput.value.trim();
+                if (message) {
+                    sendMessage(message);
+                    messageInput.value = '';
+                }
+            }
+        });
+
+        // Make functions globally available
+        window.sendMessage = sendMessage;
+        window.sendQuickMessage = sendQuickMessage;
+        window.testConnection = testConnection;
+        window.addMessage = addMessage;
+        window.showTypingIndicator = showTypingIndicator;
+        window.hideTypingIndicator = hideTypingIndicator;
+
+        console.log('Chatbot initialized successfully!');
+
+        // Auto-send welcome message
+        setTimeout(() => {
+            addMessage('👋 Hello! I\'m your advanced medical assistant specialized in brain tumor analysis. I can provide comprehensive medical information including detailed tumor explanations, treatment protocols, and clinical guidance. How can I assist you today?', 'bot');
+        }, 1000);
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Medical Annotations - GLIOMA</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .navbar {
+            background: rgba(0, 0, 0, 0.9);
+            padding: 15px 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+        
+        .navbar ul {
+            list-style: none;
+            text-align: center;
+        }
+        
+        .navbar li {
+            display: inline-block;
+            margin: 0 20px;
+        }
+        
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        
+        .navbar a:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .container {
+            margin-top: 80px;
+            padding: 20px;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .annotation-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .annotation-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .annotation-panel h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .tools-section {
+            margin-bottom: 25px;
+        }
+        
+        .tool-category {
+            margin-bottom: 15px;
+        }
+        
+        .tool-category h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .tool-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .tool-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+        
+        .tool-btn:hover {
+            background: #5a6fd8;
+        }
+        
+        .tool-btn.active {
+            background: #4a5fc1;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            margin-top: 10px;
+        }
+        
+        .color-btn {
+            width: 25px;
+            height: 25px;
+            border: 2px solid #ddd;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .color-btn:hover {
+            transform: scale(1.2);
+        }
+        
+        .color-btn.active {
+            border-color: #333;
+            transform: scale(1.3);
+        }
+        
+        .annotation-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        
+        .annotation-item {
+            background: #f8f9fa;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .annotation-item:hover {
+            background: #e9ecef;
+        }
+        
+        .annotation-item.selected {
+            background: #e3f2fd;
+            border-left-color: #2196f3;
+        }
+        
+        .annotation-label {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .annotation-type {
+            font-size: 0.8em;
+            color: #666;
+        }
+        
+        .image-container {
+            position: relative;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .medical-image {
+            max-width: 100%;
+            max-height: 500px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .annotation-canvas {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            cursor: crosshair;
+        }
+        
+        .annotation-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .form-textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .action-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .action-btn:hover {
+            background: #5a6fd8;
+        }
+        
+        .action-btn.secondary {
+            background: #6c757d;
+        }
+        
+        .action-btn.secondary:hover {
+            background: #5a6268;
+        }
+        
+        .measurement-display {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .measurement-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            padding: 5px;
+        }
+        
+        @media (max-width: 1024px) {
+            .annotation-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <ul>
+            <li><a href="{{ url_for('userlog_page') }}">Home</a></li>
+            <li><a href="{{ url_for('doctor_dashboard') }}">Doctor Dashboard</a></li>
+            <li><a href="{{ url_for('logout') }}">Logout</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <h1>Medical Image Annotation System</h1>
+            <p>Advanced annotation tools for medical image analysis</p>
+        </div>
+
+        <div class="annotation-grid">
+            <!-- Left Panel: Tools and Annotations -->
+            <div class="annotation-panel">
+                <h3>Annotation Tools</h3>
+                
+                <div class="tools-section">
+                    <div class="tool-category">
+                        <h4>Drawing Tools</h4>
+                        <div class="tool-buttons">
+                            <button class="tool-btn active" data-tool="pointer">Pointer</button>
+                            <button class="tool-btn" data-tool="rectangle">Rectangle</button>
+                            <button class="tool-btn" data-tool="circle">Circle</button>
+                            <button class="tool-btn" data-tool="ellipse">Ellipse</button>
+                            <button class="tool-btn" data-tool="line">Line</button>
+                            <button class="tool-btn" data-tool="arrow">Arrow</button>
+                            <button class="tool-btn" data-tool="text">Text</button>
+                            <button class="tool-btn" data-tool="freehand">Freehand</button>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-category">
+                        <h4>Medical Markers</h4>
+                        <div class="tool-buttons">
+                            <button class="tool-btn" data-tool="tumor">Tumor</button>
+                            <button class="tool-btn" data-tool="lesion">Lesion</button>
+                            <button class="tool-btn" data-tool="mass">Mass</button>
+                            <button class="tool-btn" data-tool="cyst">Cyst</button>
+                            <button class="tool-btn" data-tool="edema">Edema</button>
+                            <button class="tool-btn" data-tool="hemorrhage">Hemorrhage</button>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-category">
+                        <h4>Colors</h4>
+                        <div class="color-palette">
+                            <div class="color-btn active" style="background: #ff0000;" data-color="#ff0000"></div>
+                            <div class="color-btn" style="background: #00ff00;" data-color="#00ff00"></div>
+                            <div class="color-btn" style="background: #0000ff;" data-color="#0000ff"></div>
+                            <div class="color-btn" style="background: #ffff00;" data-color="#ffff00"></div>
+                            <div class="color-btn" style="background: #ff00ff;" data-color="#ff00ff"></div>
+                            <div class="color-btn" style="background: #00ffff;" data-color="#00ffff"></div>
+                            <div class="color-btn" style="background: #ffa500;" data-color="#ffa500"></div>
+                            <div class="color-btn" style="background: #800080;" data-color="#800080"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>Annotations List</h3>
+                <div class="annotation-list" id="annotationList">
+                    <div class="annotation-item selected">
+                        <div class="annotation-label">Tumor Region #1</div>
+                        <div class="annotation-type">Rectangle - Red</div>
+                    </div>
+                    <div class="annotation-item">
+                        <div class="annotation-label">Suspicious Area</div>
+                        <div class="annotation-type">Circle - Green</div>
+                    </div>
+                    <div class="annotation-item">
+                        <div class="annotation-label">Measurement Line</div>
+                        <div class="annotation-type">Line - Blue</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Image and Annotation Form -->
+            <div class="annotation-panel">
+                <h3>Medical Image: {{ filename }}</h3>
+                
+                <div class="image-container">
+                    <img src="{{ url_for('static', filename='uploads/' + filename) }}" 
+                         alt="Brain Scan" class="medical-image" id="medicalImage">
+                    <canvas class="annotation-canvas" id="annotationCanvas"></canvas>
+                </div>
+
+                <div class="annotation-form">
+                    <h4>Annotation Details</h4>
+                    
+                    <div class="form-group">
+                        <label for="annotationLabel">Label</label>
+                        <input type="text" id="annotationLabel" class="form-input" placeholder="Enter annotation label">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="annotationType">Type</label>
+                        <select id="annotationType" class="form-input">
+                            <option value="tumor">Tumor</option>
+                            <option value="lesion">Lesion</option>
+                            <option value="mass">Mass</option>
+                            <option value="cyst">Cyst</option>
+                            <option value="edema">Edema</option>
+                            <option value="hemorrhage">Hemorrhage</option>
+                            <option value="measurement">Measurement</option>
+                            <option value="note">Note</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="annotationNotes">Clinical Notes</label>
+                        <textarea id="annotationNotes" class="form-input form-textarea" placeholder="Add clinical observations..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="annotationSeverity">Severity Level</label>
+                        <select id="annotationSeverity" class="form-input">
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="critical">Critical</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="measurement-display">
+                    <h4>Measurements</h4>
+                    <div class="measurement-item">
+                        <span>Area:</span>
+                        <span>245.6 mm²</span>
+                    </div>
+                    <div class="measurement-item">
+                        <span>Perimeter:</span>
+                        <span>62.3 mm</span>
+                    </div>
+                    <div class="measurement-item">
+                        <span>Diameter:</span>
+                        <span>17.6 mm</span>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="action-btn" onclick="saveAnnotation()">Save Annotation</button>
+                    <button class="action-btn secondary" onclick="clearAnnotations()">Clear All</button>
+                    <button class="action-btn" onclick="exportAnnotations()">Export Report</button>
+                    <a href="{{ url_for('image_report', filename=filename) }}" class="action-btn secondary">Back to Report</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTool = 'pointer';
+        let currentColor = '#ff0000';
+        let isDrawing = false;
+        let startX, startY;
+        let annotations = [];
+        let selectedAnnotation = null;
+
+        // Tool selection
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentTool = this.getAttribute('data-tool');
+            });
+        });
+
+        // Color selection
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentColor = this.getAttribute('data-color');
+            });
+        });
+
+        // Annotation list selection
+        document.querySelectorAll('.annotation-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.annotation-item').forEach(i => i.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedAnnotation = this;
+            });
+        });
+
+        function setupCanvas() {
+            const canvas = document.getElementById('annotationCanvas');
+            const img = document.getElementById('medicalImage');
+            
+            canvas.width = img.width;
+            canvas.height = img.height;
+            
+            const ctx = canvas.getContext('2d');
+            
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const rect = e.target.getBoundingClientRect();
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            
+            const canvas = document.getElementById('annotationCanvas');
+            const ctx = canvas.getContext('2d');
+            const rect = e.target.getBoundingClientRect();
+            const currentX = e.clientX - rect.left;
+            const currentY = e.clientY - rect.top;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Redraw previous annotations
+            annotations.forEach(annotation => {
+                drawAnnotation(ctx, annotation);
+            });
+            
+            // Draw current annotation
+            const currentAnnotation = {
+                tool: currentTool,
+                color: currentColor,
+                startX: startX,
+                startY: startY,
+                currentX: currentX,
+                currentY: currentY
+            };
+            drawAnnotation(ctx, currentAnnotation);
+        }
+
+        function drawAnnotation(ctx, annotation) {
+            ctx.strokeStyle = annotation.color;
+            ctx.fillStyle = annotation.color + '40'; // Add transparency
+            ctx.lineWidth = 2;
+            
+            switch (annotation.tool) {
+                case 'rectangle':
+                    const width = annotation.currentX - annotation.startX;
+                    const height = annotation.currentY - annotation.startY;
+                    ctx.strokeRect(annotation.startX, annotation.startY, width, height);
+                    ctx.fillRect(annotation.startX, annotation.startY, width, height);
+                    break;
+                case 'circle':
+                    const radius = Math.sqrt(
+                        Math.pow(annotation.currentX - annotation.startX, 2) +
+                        Math.pow(annotation.currentY - annotation.startY, 2)
+                    );
+                    ctx.beginPath();
+                    ctx.arc(annotation.startX, annotation.startY, radius, 0, 2 * Math.PI);
+                    ctx.stroke();
+                    ctx.fill();
+                    break;
+                case 'line':
+                    ctx.beginPath();
+                    ctx.moveTo(annotation.startX, annotation.startY);
+                    ctx.lineTo(annotation.currentX, annotation.currentY);
+                    ctx.stroke();
+                    break;
+                case 'arrow':
+                    ctx.beginPath();
+                    ctx.moveTo(annotation.startX, annotation.startY);
+                    ctx.lineTo(annotation.currentX, annotation.currentY);
+                    ctx.stroke();
+                    // Draw arrowhead
+                    const angle = Math.atan2(annotation.currentY - annotation.startY, annotation.currentX - annotation.startX);
+                    ctx.beginPath();
+                    ctx.moveTo(annotation.currentX, annotation.currentY);
+                    ctx.lineTo(annotation.currentX - 10 * Math.cos(angle - Math.PI/6), annotation.currentY - 10 * Math.sin(angle - Math.PI/6));
+                    ctx.moveTo(annotation.currentX, annotation.currentY);
+                    ctx.lineTo(annotation.currentX - 10 * Math.cos(angle + Math.PI/6), annotation.currentY - 10 * Math.sin(angle + Math.PI/6));
+                    ctx.stroke();
+                    break;
+                case 'text':
+                    ctx.font = '16px Arial';
+                    ctx.fillStyle = annotation.color;
+                    ctx.fillText('Annotation', annotation.startX, annotation.startY);
+                    break;
+            }
+        }
+
+        function stopDrawing() {
+            if (isDrawing) {
+                isDrawing = false;
+                const annotation = {
+                    tool: currentTool,
+                    color: currentColor,
+                    startX: startX,
+                    startY: startY,
+                    currentX: startX,
+                    currentY: startY,
+                    label: document.getElementById('annotationLabel').value || 'Unnamed Annotation',
+                    type: document.getElementById('annotationType').value,
+                    notes: document.getElementById('annotationNotes').value,
+                    severity: document.getElementById('annotationSeverity').value
+                };
+                annotations.push(annotation);
+                updateAnnotationList();
+            }
+        }
+
+        function updateAnnotationList() {
+            const list = document.getElementById('annotationList');
+            list.innerHTML = '';
+            
+            annotations.forEach((annotation, index) => {
+                const item = document.createElement('div');
+                item.className = 'annotation-item';
+                if (index === annotations.length - 1) {
+                    item.classList.add('selected');
+                    selectedAnnotation = item;
+                }
+                item.innerHTML = `
+                    <div class="annotation-label">${annotation.label}</div>
+                    <div class="annotation-type">${annotation.type} - ${annotation.color}</div>
+                `;
+                item.addEventListener('click', function() {
+                    document.querySelectorAll('.annotation-item').forEach(i => i.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedAnnotation = this;
+                    // Load annotation details into form
+                    document.getElementById('annotationLabel').value = annotation.label;
+                    document.getElementById('annotationType').value = annotation.type;
+                    document.getElementById('annotationNotes').value = annotation.notes;
+                    document.getElementById('annotationSeverity').value = annotation.severity;
+                });
+                list.appendChild(item);
+            });
+        }
+
+        function saveAnnotation() {
+            if (annotations.length > 0) {
+                alert('Annotations saved successfully!');
+                // In a real implementation, this would save to the database
+            } else {
+                alert('No annotations to save.');
+            }
+        }
+
+        function clearAnnotations() {
+            if (confirm('Are you sure you want to clear all annotations?')) {
+                const canvas = document.getElementById('annotationCanvas');
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                annotations = [];
+                updateAnnotationList();
+                document.getElementById('annotationLabel').value = '';
+                document.getElementById('annotationNotes').value = '';
+            }
+        }
+
+        function exportAnnotations() {
+            alert('Annotation report exported successfully!');
+            // In a real implementation, this would generate a PDF report
+        }
+
+        // Initialize when image loads
+        document.getElementById('medicalImage').onload = setupCanvas;
+    </script>
+</body>
+</html>

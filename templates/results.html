@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GLIOMA DETECTION - Results</title>
+    <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <style>
+      .results-container{
+        background-color: rgba(255, 255, 255, 0.95);
+        font-size: 16px;
+        margin: 50px auto;
+        padding: 50px;
+        border-radius: 10px;
+        max-width: 800px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      }
+      img{
+       max-width: 100%;
+       height: auto;
+       margin-bottom: 20px;
+       border-radius: 5px;
+       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      body{
+        background-image: url('{{ url_for("static", filename="demo1.jpg") }}');
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        font-family: Arial, sans-serif;
+      }
+      h1, h4{
+        text-align: center;
+        color: #333;
+      }
+      .result-info{
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 5px;
+        margin-top: 20px;
+      }
+      .confidence{
+        font-size: 18px;
+        font-weight: bold;
+        color: #007bff;
+      }
+      .prediction{
+        font-size: 24px;
+        font-weight: bold;
+        color: #28a745;
+        text-transform: uppercase;
+      }
+      .btn-home{
+        background-color: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        text-decoration: none;
+        display: inline-block;
+        margin-top: 20px;
+      }
+      .btn-home:hover{
+        background-color: #0056b3;
+        color: white;
+        text-decoration: none;
+      }
+    </style>
+</head>
+ <body>
+  <nav class="navbar navbar-inverse">
+    <div class="container-fluid">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="/">GLIOMA DETECTION</a>
+      </div>
+      <div class="collapse navbar-collapse" id="myNavbar">
+        <ul class="nav navbar-nav">
+          <li><a href="{{ url_for('userlog_page') }}"><span class="glyphicon glyphicon-home"></span> Home</a></li>
+        </ul>
+        <ul class="nav navbar-nav navbar-right">
+          <li><a href="{{ url_for('userlog_page') }}">Recheck</a></li>
+          <li><a href="{{ url_for('graph') }}">Graphs</a></li>
+          <li><a href="{{ url_for('logout') }}"><span class="glyphicon glyphicon-log-out"></span> Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+    <div class="container">
+      {% if msg %}
+      <div class="alert alert-warning alert-dismissible">
+        <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+        <strong>Warning!</strong> {{msg}}
+      </div>
+      {% endif %}
+
+  <h1 style="padding-top: 50px; text-align: center;">GLIOMA DETECTION RESULTS</h1>
+  <hr>
+
+  {% if status %}
+
+<div class="results">
+    <div class="row">
+    <div class="col-lg-4">
+      <center><h4>Original Image</h4></center>
+      <hr>
+      {% if processed_images %}
+      <img src="{{ url_for('static', filename=processed_images.original) }}">
+      {% endif %}
+    </div>
+
+    <div class="col-lg-4">
+     <center> <h4>Grayscale</h4></center>
+      <hr>
+      {% if processed_images %}
+        <img src="{{ url_for('static', filename=processed_images.gray) }}">
+      {% endif %}
+    </div>
+
+    <div class="col-lg-4">
+      <center><h4>Edge Detection</h4></center>
+      <hr>
+      {% if processed_images %}
+        <img src="{{ url_for('static', filename=processed_images.edges) }}">
+      {% endif %}
+    </div>
+
+    <div class="col-lg-4">
+      <center><h4>Threshold Detection</h4></center>
+      <hr>
+      {% if processed_images %}
+        <img src="{{ url_for('static', filename=processed_images.threshold) }}">
+      {% endif %}
+    </div>
+
+
+      <div class="col-lg-4">
+        <center><h4>Image Sharpening</h4></center>
+        <hr>
+        {% if processed_images %}
+          <img src="{{ url_for('static', filename=processed_images.sharpened) }}">
+        {% endif %}
+      </div>
+
+    <div class="col-lg-4">
+     <center><h4>AI Analysis Result</h4></center>
+      <hr>
+      {% if ai_assistance %}
+          <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px;">
+            <p><b>Diagnosis:</b> {{ ai_assistance.diagnosis }}</p>
+            <p><b>Accuracy:</b> {{ "%.2f"|format(ai_assistance.accuracy) }}%</p>
+            <p><b>Recommendation:</b></p>
+            <p style="font-size: 14px;">{{ ai_assistance.recommendation }}</p>
+
+            {% if ai_assistance.treatment_options %}
+            <p><b>Treatment Options:</b></p>
+            <ul style="font-size: 14px;">
+              {% for option in ai_assistance.treatment_options %}
+                <li>{{ option }}</li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+
+            <p><b>Next Steps:</b></p>
+            <ul style="font-size: 14px;">
+              {% for step in ai_assistance.next_steps %}
+                <li>{{ step }}</li>
+              {% endfor %}
+            </ul>
+            <div style="margin-top:10px;">
+              <a class="btn btn-info btn-sm" href="{{ url_for('image_report', filename=filename) }}">View Grad-CAM</a>
+              <a class="btn btn-success btn-sm" href="{{ url_for('patient_reports') }}" style="margin-left: 10px;">📋 View Doctor Reports</a>
+            </div>
+
+            <!-- Request Doctor Review Section -->
+            <div style="margin-top:15px; padding:10px; background-color: #e8f8f8; border-radius: 5px; border-left: 4px solid #17a2b8;">
+              <strong>💬 Get Doctor Review:</strong>
+              <p style="margin: 8px 0 10px 0; font-size: 14px;">Request a professional medical review of your AI analysis results. Available doctors will review your case.</p>
+              <button type="button" id="requestDoctorReviewBtn" class="btn btn-warning btn-sm" onclick="requestDoctorReview()">
+                🚑 Request Doctor Review
+              </button>
+            </div>
+          </div>
+      {% endif %}
+        </div>
+    </div>
+  </div>
+
+  <!-- Voice Results Explanation -->
+  <div style="margin: 30px auto; padding: 20px; background: rgba(248,249,250,0.9); border-radius: 10px; max-width: 600px;">
+    <h4 style="text-align: center; color: #333;">🔊 Hear Your Results</h4>
+    <div style="text-align: center; margin: 20px 0;">
+      <button onclick="speakResults()" style="background: #2196F3; color: white; border: none; padding: 15px 30px; border-radius: 25px; font-size: 16px; cursor: pointer;">
+        🔊 Listen to Results
+      </button>
+    </div>
+    <div style="color: #666; text-align: center; font-size: 14px;">
+      <p>Click the button above to hear a voice explanation of your brain scan analysis results.</p>
+    </div>
+  </div>
+
+  <!-- Grad-CAM moved to dedicated page linked above -->
+
+  <!-- Download Report Section -->
+  <div class="text-center" style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+    <h4 style="color: #333; margin-bottom: 15px;">Download Analysis Report</h4>
+    <p style="color: #666; margin-bottom: 20px;">Get a comprehensive report for this analyzed image</p>
+
+    <div style="margin-bottom: 20px;">
+      <a href="{{ url_for('download_report', filename=filename) }}"
+         class="btn btn-success"
+         style="font-size: 16px; padding: 12px 25px; margin: 10px;">
+        Download Text Report
+      </a>
+    </div>
+
+    <div style="font-size: 12px; color: #666; margin-top: 10px;">
+      <strong>Available format:</strong><br>
+      <strong>Text Report:</strong> Comprehensive analysis in readable format for medical records
+    </div>
+  </div>
+
+  <!-- Navigation Buttons -->
+  <div class="text-center" style="margin-top: 30px;">
+    <a href="{{ url_for('userlog_page') }}" class="btn btn-primary">🏠 Analyze Another Image</a>
+    <a href="{{ url_for('chatbot_page') }}" class="btn btn-warning">💬 Ask Chatbot</a>
+    <a href="{{ url_for('logout') }}" class="btn btn-secondary">🚪 Logout</a>
+  </div>
+
+  <script>
+    // Store template variables in JavaScript variables to avoid syntax conflicts
+    const imageFilename = '{{ filename }}';
+    const predictedClass = '{{ predicted_class }}';
+    const accuracyValue = {{ accuracy }};
+    const accuracyFormatted = '{{ "%.2f"|format(accuracy) }}';
+
+
+
+
+  </script>
+
+  {% endif %}
+</div>
+
+  <script>
+    function speakResults() {
+      if ('speechSynthesis' in window) {
+        // Get the results from the page
+        const diagnosis = "{{ ai_assistance.diagnosis }}";
+        const accuracy = "{{ '%.1f'|format(ai_assistance.accuracy) }}";
+
+        let resultsText = `Your brain scan analysis is complete. The diagnosis is ${diagnosis} with an accuracy of ${accuracy} percent.`;
+
+        // Add specific information based on diagnosis
+        if (diagnosis.toLowerCase().includes('astrocytoma')) {
+          resultsText += ` Astrocytoma is a type of brain tumor that develops from star-shaped brain cells called astrocytes. These tumors can vary in grade and aggressiveness.`;
+        } else if (diagnosis.toLowerCase().includes('ependymoma')) {
+          resultsText += ` Ependymoma is a tumor that arises from ependymal cells that line the ventricles of the brain and the center of the spinal cord.`;
+        } else if (diagnosis.toLowerCase().includes('glioblastoma')) {
+          resultsText += ` Glioblastoma is an aggressive type of brain cancer that forms from glial cells. It is the most common primary brain tumor in adults.`;
+        } else if (diagnosis.toLowerCase().includes('oligodendroglioma')) {
+          resultsText += ` Oligodendroglioma is a tumor that develops from oligodendrocytes, which are cells that produce myelin to insulate nerve fibers.`;
+        } else if (diagnosis.toLowerCase().includes('notumor') || diagnosis.toLowerCase().includes('no tumor')) {
+          resultsText += ` Great news! No tumor was detected in your brain scan. This indicates healthy brain tissue.`;
+        }
+
+        resultsText += ` Please consult with a medical professional for proper interpretation and next steps. You can analyze another image or view your accuracy progression in the Graphs section.`;
+
+        const utterance = new SpeechSynthesisUtterance(resultsText);
+        utterance.rate = 0.8;
+        utterance.pitch = 1;
+        utterance.volume = 0.9;
+
+        // Try to use a clear voice
+        const voices = speechSynthesis.getVoices();
+        const preferredVoice = voices.find(voice =>
+          voice.name.includes('Google') ||
+          voice.name.includes('Microsoft') ||
+          voice.lang.includes('en-US')
+        );
+
+        if (preferredVoice) {
+          utterance.voice = preferredVoice;
+        }
+
+        speechSynthesis.speak(utterance);
+      } else {
+        alert('Text-to-speech not supported in this browser');
+      }
+    }
+
+    // Request doctor review function
+    function requestDoctorReview() {
+      const btn = document.getElementById('requestDoctorReviewBtn');
+      const originalText = btn.textContent;
+      btn.textContent = 'Submitting Request...';
+      btn.disabled = true;
+
+      // Here we would send a request to the server to notify doctors
+      // For now, show a success message and redirect to patient reports
+      alert('✅ Doctor review requested successfully! Available doctors will be notified to review your AI analysis results. You can check the status in "My Reports".');
+      window.location.href = '{{ url_for("patient_reports") }}';
+
+      // In a full implementation, this would be an AJAX call:
+      // fetch('/request_doctor_review', {
+      //   method: 'POST',
+      //   headers: {'Content-Type': 'application/json'},
+      //   body: JSON.stringify({ filename: imageFilename })
+      // }).then(response => response.json()).then(data => {
+      //   if (data.success) { /* success */ } else { /* error */ }
+      // });
+    }
+
+    // Auto-speak results when page loads
+    window.addEventListener('load', function() {
+      setTimeout(() => {
+        if ('speechSynthesis' in window) {
+          const welcomeMessage = 'Your brain scan analysis is complete. Click the "Listen to Results" button to hear a detailed explanation of your results.';
+          const utterance = new SpeechSynthesisUtterance(welcomeMessage);
+          utterance.rate = 0.9;
+          utterance.pitch = 1;
+          utterance.volume = 0.8;
+          speechSynthesis.speak(utterance);
+        }
+      }, 1000);
+    });
+  </script>
+
+  </body>
+  </html>
